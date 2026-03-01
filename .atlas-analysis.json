@@ -1,0 +1,186 @@
+{
+  "projectType": "saas",
+  "projectName": "Syft Space",
+  "projectDescription": "A privacy-preserving platform that lets you create AI-powered endpoints from your data while maintaining full control over who can access it and how.",
+  "theme": "palm",
+  "primaryColor": "#4F46E5",
+  "lightColor": "#818CF8",
+  "darkColor": "#3730A3",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "installation"
+            ]
+          },
+          {
+            "group": "Core Concepts",
+            "pages": [
+              "concepts/overview",
+              "concepts/datasets",
+              "concepts/models",
+              "concepts/endpoints",
+              "concepts/policies"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/creating-datasets",
+              "guides/connecting-models",
+              "guides/building-endpoints",
+              "guides/setting-policies",
+              "guides/publishing-to-syfthub",
+              "guides/querying-endpoints"
+            ]
+          },
+          {
+            "group": "Desktop App",
+            "pages": [
+              "desktop/overview",
+              "desktop/installation",
+              "desktop/features"
+            ]
+          },
+          {
+            "group": "Deployment",
+            "pages": [
+              "deployment/docker",
+              "deployment/source",
+              "deployment/production"
+            ]
+          },
+          {
+            "group": "Advanced",
+            "pages": [
+              "advanced/architecture",
+              "advanced/security",
+              "advanced/vector-databases",
+              "advanced/custom-integrations"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "api/introduction",
+              "api/authentication"
+            ]
+          },
+          {
+            "group": "Endpoints",
+            "pages": [
+              "api/endpoints/create",
+              "api/endpoints/query",
+              "api/endpoints/publish",
+              "api/endpoints/list",
+              "api/endpoints/update",
+              "api/endpoints/delete"
+            ]
+          },
+          {
+            "group": "Datasets",
+            "pages": [
+              "api/datasets/create",
+              "api/datasets/list",
+              "api/datasets/get",
+              "api/datasets/update",
+              "api/datasets/delete",
+              "api/datasets/types"
+            ]
+          },
+          {
+            "group": "Models",
+            "pages": [
+              "api/models/create",
+              "api/models/list",
+              "api/models/get",
+              "api/models/update",
+              "api/models/delete",
+              "api/models/types"
+            ]
+          },
+          {
+            "group": "Policies",
+            "pages": [
+              "api/policies/create",
+              "api/policies/list",
+              "api/policies/get",
+              "api/policies/update",
+              "api/policies/delete",
+              "api/policies/types"
+            ]
+          },
+          {
+            "group": "Settings",
+            "pages": [
+              "api/settings/get",
+              "api/settings/update"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Resources",
+        "groups": [
+          {
+            "group": "Community",
+            "pages": [
+              "resources/contributing",
+              "resources/support",
+              "resources/changelog"
+            ]
+          },
+          {
+            "group": "Use Cases",
+            "pages": [
+              "use-cases/publishers",
+              "use-cases/researchers",
+              "use-cases/organizations",
+              "use-cases/data-monetization"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Privacy-preserving AI endpoints",
+    "Multi-database support (Weaviate, Qdrant, ChromaDB)",
+    "Multi-model support (OpenAI, Anthropic, Ollama, vLLM)",
+    "Automatic Docker provisioning for vector databases",
+    "Desktop and web interface with Tauri",
+    "RAG (Retrieval-Augmented Generation) capabilities",
+    "Access control and rate limiting policies",
+    "SyftHub marketplace integration",
+    "Document ingestion and indexing",
+    "Usage analytics and cost tracking"
+  ],
+  "publicApiSurface": [
+    "POST /api/v1/endpoints/ - Create endpoint",
+    "POST /api/v1/endpoints/{slug}/query - Query endpoint",
+    "POST /api/v1/endpoints/{id}/publish - Publish endpoint",
+    "GET /api/v1/endpoints/ - List endpoints",
+    "POST /api/v1/datasets/ - Create dataset",
+    "GET /api/v1/datasets/ - List datasets",
+    "GET /api/v1/datasets/types/ - List dataset types",
+    "POST /api/v1/models/ - Create model",
+    "GET /api/v1/models/ - List models",
+    "GET /api/v1/models/types/ - List model types",
+    "POST /api/v1/policies/ - Create policy",
+    "GET /api/v1/policies/ - List policies",
+    "GET /api/v1/policies/types/ - List policy types",
+    "GET /api/v1/settings/ - Get settings",
+    "PUT /api/v1/settings/ - Update settings"
+  ]
+}
