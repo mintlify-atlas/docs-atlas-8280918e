@@ -42,8 +42,8 @@ Syft Space is a full-stack application that creates a bridge between your privat
 
 - **Frontend**: Vue 3 web interface for management and configuration
 - **Backend**: FastAPI server handling requests, policies, and data processing
-- **Vector databases**: Local or remote databases (Weaviate, Qdrant, ChromaDB) for document indexing
-- **AI models**: Integration with OpenAI, Anthropic, Ollama, vLLM, and other providers
+- **Vector databases**: Local or remote databases (Weaviate, ChromaDB) for document indexing
+- **AI models**: Integration with OpenAI and any OpenAI-compatible providers (Ollama, vLLM, etc.)
 - **SyftHub integration**: Optional publishing to the decentralized knowledge network
 
 The system automatically provisions Docker containers for local vector databases and provides a unified API for querying across different data sources and AI models.
@@ -57,7 +57,7 @@ Build your knowledge hub with four core components:
     Upload documents or connect vector databases. Files are automatically indexed for AI search.
   </Step>
   <Step title="Models">
-    Connect OpenAI, Anthropic, Ollama, vLLM, or any OpenAI-compatible provider.
+    Connect OpenAI or any OpenAI-compatible provider (Ollama, vLLM, etc.).
   </Step>
   <Step title="Endpoints">
     Combine datasets and models into queryable RAG endpoints anyone can use.

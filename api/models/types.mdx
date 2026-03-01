@@ -309,42 +309,44 @@ Supports OpenAI's chat completion API and OpenAI-compatible APIs (e.g., Azure Op
 
 **Example models:** `gpt-4`, `gpt-4-turbo`, `gpt-3.5-turbo`
 
-### Anthropic
+**OpenAI-compatible providers:**
 
-**Type identifier:** `anthropic`
+The OpenAI model type supports any provider with an OpenAI-compatible API. Use the `base_url` parameter to connect to alternative providers:
 
-Supports Anthropic's Claude models via their API.
-
-**Configuration:**
-- `api_key` (required): Anthropic API key
-- `model`: Model identifier (e.g., `claude-3-opus-20240229`)
-- `max_tokens`: Maximum response length
-
-**Example models:** `claude-3-opus`, `claude-3-sonnet`, `claude-3-haiku`
-
-### Ollama
-
-**Type identifier:** `ollama`
-
-Supports locally-hosted Ollama models.
-
-**Configuration:**
-- `base_url` (required): Ollama server URL (e.g., `http://localhost:11434`)
-- `model` (required): Model name installed in Ollama
-
-**Example models:** `llama2`, `mistral`, `codellama`, `phi`
-
-### vLLM
-
-**Type identifier:** `vllm`
-
-Supports vLLM inference server for high-performance model serving.
-
-**Configuration:**
-- `base_url` (required): vLLM server URL
-- `model` (required): Model identifier
-- `api_key`: Optional authentication token
+<Tabs>
+  <Tab title="Ollama">
+    ```json
+    {
+      "dtype": "openai",
+      "configuration": {
+        "base_url": "http://localhost:11434/v1",
+        "api_key": "not-needed",
+        "model": "llama2"
+      }
+    }
+    ```
+    
+    Supports locally-hosted Ollama models. Available models depend on what you've pulled (e.g., `llama2`, `mistral`, `codellama`, `phi`).
+  </Tab>
+  <Tab title="vLLM">
+    ```json
+    {
+      "dtype": "openai",
+      "configuration": {
+        "base_url": "http://localhost:8000/v1",
+        "api_key": "optional-token",
+        "model": "meta-llama/Llama-2-7b"
+      }
+    }
+    ```
+    
+    Supports vLLM inference server for high-performance model serving.
+  </Tab>
+  <Tab title="Other providers">
+    Any service implementing the OpenAI chat completion API can be used by setting the appropriate `base_url`.
+  </Tab>
+</Tabs>
 
 <Note>
-Model type availability depends on installed dependencies. Check the `enabled` field when listing types to see which are currently available in your deployment.
+Currently, only the OpenAI model type is implemented. Support for native Anthropic API (non-OpenAI-compatible) is planned for future releases.
 </Note>

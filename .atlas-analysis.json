@@ -156,9 +156,9 @@
   },
   "keyFeatures": [
     "Privacy-preserving AI endpoints",
-    "Multi-database support (Weaviate, Qdrant, ChromaDB)",
-    "Multi-model support (OpenAI, Anthropic, Ollama, vLLM)",
-    "Automatic Docker provisioning for vector databases",
+    "Multi-database support (Weaviate, ChromaDB)",
+    "OpenAI and OpenAI-compatible model support (Ollama, vLLM, etc.)",
+    "Automatic Docker provisioning for ChromaDB",
     "Desktop and web interface with Tauri",
     "RAG (Retrieval-Augmented Generation) capabilities",
     "Access control and rate limiting policies",
