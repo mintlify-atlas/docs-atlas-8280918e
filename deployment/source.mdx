@@ -1,0 +1,426 @@
+---
+title: Deploy from source
+description: Deploy Syft Space from source code for development and customization
+---
+
+Deploy Syft Space from source code for development, customization, or testing unreleased features.
+
+## Prerequisites
+
+- Python 3.12 or later
+- Node.js 20 or later
+- Docker (for vector database provisioning)
+- Git
+- [uv](https://github.com/astral-sh/uv) (Python package manager)
+- [Bun](https://bun.sh) (JavaScript runtime and package manager)
+
+## Quick start
+
+Clone the repository and run the automated setup script:
+
+```bash
+git clone https://github.com/OpenMined/syft-space.git
+cd syft-space
+./run.sh
+```
+
+The script will:
+1. Remove any existing virtual environment
+2. Create a new Python 3.12 virtual environment
+3. Install backend dependencies with development extras
+4. Start the FastAPI server on port 8080
+
+Access the application at [http://localhost:8080](http://localhost:8080)
+
+## Manual installation
+
+For more control over the setup process:
+
+### Backend setup
+
+<CodeGroup>
+
+```bash Create virtual environment
+rm -rf .venv
+uv venv -p 3.12
+```
+
+```bash Install dependencies
+uv pip install -e "backend/[dev]"
+```
+
+```bash Install with optional libraries
+uv pip install -e "backend/[dev,libs]"
+```
+
+</CodeGroup>
+
+The `libs` extra includes:
+- Document processing (docling)
+- Advanced text extraction
+- Additional file format support
+
+### Frontend setup
+
+```bash
+cd frontend
+bun install
+bun run build
+cd ..
+```
+
+<Warning>
+Always use `bun` for frontend package management, not `npm` or `yarn`. The project is configured for Bun's performance and compatibility features.
+</Warning>
+
+## Running the application
+
+### Development mode
+
+Run the backend with hot reload:
+
+```bash
+uv run uvicorn syft_space.main:app --reload --host 0.0.0.0 --port 8080
+```
+
+For frontend development:
+
+```bash
+cd frontend
+bun dev
+```
+
+The frontend development server runs on port 5173 with CORS configured for the backend.
+
+### Production mode
+
+Build the frontend for production:
+
+```bash
+cd frontend
+bun run build
+cd ..
+```
+
+Run the backend without hot reload:
+
+```bash
+uv run uvicorn syft_space.main:app --host 0.0.0.0 --port 8080
+```
+
+## Project structure
+
+```
+syft-space/
+├── backend/              # Python FastAPI server
+│   ├── syft_space/       # Main application code
+│   │   ├── accounting/   # Financial tracking
+│   │   ├── integrations/ # External services
+│   │   ├── policies/     # Rate limiting & guards
+│   │   ├── profile/      # User profiles
+│   │   ├── service/      # Core functionality
+│   │   ├── settings/     # Configuration
+│   │   ├── shared/       # Common utilities
+│   │   └── main.py       # Application entry point
+│   ├── pyproject.toml    # Python dependencies
+│   └── tests/            # Backend tests
+├── frontend/             # Vue 3 web interface
+│   ├── src/
+│   │   ├── components/   # Reusable components
+│   │   ├── pages/        # Route pages
+│   │   ├── stores/       # Pinia state management
+│   │   ├── composables/  # Shared logic
+│   │   └── api/          # API client
+│   ├── package.json      # JavaScript dependencies
+│   └── vite.config.ts    # Build configuration
+├── docs/                 # Documentation
+├── Dockerfile            # Container build
+├── docker-compose.yml    # Docker orchestration
+└── run.sh                # Quick start script
+```
+
+## Configuration
+
+### Environment variables
+
+Create a `.env` file in the project root:
+
+```bash
+# Server
+SYFT_PORT=8080
+SYFT_DEBUG=true
+
+# Database
+SYFT_SQLITE_DB_PATH=~/.syft-space/app.db
+SYFT_RESET_DB=false
+
+# Authentication
+SYFT_ADMIN_API_KEY=
+
+# External services
+SYFT_DEFAULT_ACCOUNTING_URL=https://syftaccounting.centralus.cloudapp.azure.com/
+SYFT_DEFAULT_MARKETPLACE_URL=https://syfthub.openmined.org
+SYFT_PUBLIC_URL=
+```
+
+### Custom port
+
+Change the server port:
+
+<CodeGroup>
+
+```bash Environment variable
+export SYFT_PORT=3000
+./run.sh
+```
+
+```bash Direct uvicorn
+uv run uvicorn syft_space.main:app --reload --host 0.0.0.0 --port 3000
+```
+
+</CodeGroup>
+
+### Database location
+
+By default, the SQLite database is stored at:
+- Development: `~/.syft-space/app.db`
+- Docker: `/data/app.db`
+
+Change the location:
+
+```bash
+export SYFT_SQLITE_DB_PATH=/path/to/database.db
+```
+
+## Development workflow
+
+### Backend development
+
+```bash
+cd backend
+
+# Format code
+black .
+isort .
+
+# Lint
+flake8 .
+
+# Type checking
+mypy .
+
+# Run tests
+pytest
+```
+
+### Frontend development
+
+```bash
+cd frontend
+
+# Start dev server
+bun dev
+
+# Lint and format
+bun run lint
+bun run format
+
+# Type checking
+bun run typecheck
+
+# Run tests
+bun run test:unit
+```
+
+<Warning>
+Always run `bun run lint` and `bun run typecheck` after making frontend changes. These checks ensure code quality and catch errors early.
+</Warning>
+
+### Adding dependencies
+
+<CodeGroup>
+
+```bash Backend
+cd backend
+uv pip install package-name
+# Update pyproject.toml manually
+```
+
+```bash Frontend
+cd frontend
+bun add package-name
+```
+
+```bash Frontend (dev dependency)
+cd frontend
+bun add -D package-name
+```
+
+</CodeGroup>
+
+## Building for production
+
+### Build frontend
+
+```bash
+cd frontend
+bun run build
+```
+
+The built files are output to `frontend/dist` and served by the FastAPI backend.
+
+### Build Docker image
+
+After building the frontend:
+
+```bash
+docker build -t syft-space-server .
+```
+
+The Dockerfile uses a multi-stage build:
+1. **Backend builder**: Installs Python dependencies with uv
+2. **Production**: Minimal image with Python runtime and pre-built frontend
+
+### Optimize Docker build
+
+For faster builds with CPU-only PyTorch:
+
+```bash
+docker build \
+  --build-arg PYTHON_VERSION=3.12 \
+  -t syft-space-server .
+```
+
+The build automatically:
+- Installs CPU-only PyTorch (avoids 4GB+ CUDA packages)
+- Compiles Python bytecode
+- Uses copy linking for smaller image size
+
+## Architecture details
+
+### Backend architecture
+
+- **Framework**: FastAPI with FastSyftBox wrapper
+- **Pattern**: Domain-driven design
+- **Database**: SQLite with SQLModel ORM
+- **Validation**: Pydantic schemas
+- **Dependencies**: FastAPI dependency injection
+
+Each component follows this structure:
+```
+component/
+├── entities.py      # Database models
+├── handlers.py      # Business logic
+├── interfaces.py    # Abstract interfaces
+├── repositories.py  # Data access
+├── routes.py        # API endpoints
+└── schemas.py       # Request/response models
+```
+
+### Frontend architecture
+
+- **Framework**: Vue 3 with Composition API
+- **UI Library**: shadcn/ui components
+- **State**: Pinia stores
+- **Styling**: Tailwind CSS
+- **Icons**: lucide-vue-next
+- **Build**: Vite
+
+### API integration
+
+The frontend accesses the backend through a structured API client:
+
+```typescript
+// frontend/src/api/endpoints/
+export const myApi = {
+  fetch: async (params): Promise<Response> => {
+    const response = await apiClient.get('/api/v1/endpoint', { params })
+    return response.data
+  }
+}
+```
+
+## Troubleshooting
+
+### Python version issues
+
+Ensure Python 3.12 is installed:
+
+```bash
+python --version
+# Should output: Python 3.12.x
+```
+
+Install Python 3.12 if needed:
+<CodeGroup>
+
+```bash Ubuntu/Debian
+sudo apt update
+sudo apt install python3.12 python3.12-venv
+```
+
+```bash macOS (Homebrew)
+brew install python@3.12
+```
+
+</CodeGroup>
+
+### uv not found
+
+Install uv:
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+### Bun not found
+
+Install Bun:
+
+```bash
+curl -fsSL https://bun.sh/install | bash
+```
+
+### Port already in use
+
+Change the port or kill the existing process:
+
+<CodeGroup>
+
+```bash Change port
+export SYFT_PORT=3000
+./run.sh
+```
+
+```bash Find and kill process
+lsof -i :8080
+kill -9 <PID>
+```
+
+</CodeGroup>
+
+### Docker socket permission denied
+
+Add your user to the docker group:
+
+```bash
+sudo usermod -aG docker $USER
+# Log out and back in
+```
+
+### Frontend build fails
+
+Clear cache and reinstall:
+
+```bash
+cd frontend
+rm -rf node_modules bun.lockb dist
+bun install
+bun run build
+```
+
+## Next steps
+
+- Review [Docker deployment](/deployment/docker) for containerized environments
+- Configure [production settings](/deployment/production)
+- Read the [API documentation](/space/api)

@@ -1,0 +1,594 @@
+---
+title: Building endpoints
+description: Learn how to create queryable RAG endpoints by combining datasets and models in Syft Space
+---
+
+Endpoints are the queryable APIs that combine your datasets and models into powerful RAG (Retrieval-Augmented Generation) services. They allow others to query your knowledge without accessing your raw data. This guide shows you how to build and configure endpoints.
+
+## Understanding endpoints
+
+An endpoint connects:
+- **Dataset (optional)** - Provides relevant context through vector search
+- **Model (optional)** - Generates AI responses based on the context
+- **Policies (optional)** - Controls access, rate limits, and costs
+
+You can create three types of endpoints:
+
+### Search-only endpoints (raw)
+
+Return matching documents from your dataset without AI generation:
+- Best for: Document retrieval, citation lookup, data exploration
+- Requires: Dataset only
+- Returns: Relevant document chunks with similarity scores
+
+### AI-only endpoints (summary)
+
+Generate responses using the model without dataset context:
+- Best for: General Q&A, chatbots using model's training data
+- Requires: Model only
+- Returns: AI-generated text responses
+
+### RAG endpoints (both)
+
+Combine dataset search with AI generation for contextualized responses:
+- Best for: Q&A over your documents, knowledge bases, research assistants
+- Requires: Dataset and model
+- Returns: AI response with relevant source documents
+
+<Tip>
+RAG endpoints are the most powerful option. They ground AI responses in your data, reducing hallucinations and providing citations.
+</Tip>
+
+## Creating an endpoint
+
+<Steps>
+
+### Navigate to endpoints
+
+From your Syft Space dashboard, click **Endpoints** in the sidebar, then click **Add Endpoint**.
+
+### Configure basic settings
+
+**Required fields:**
+
+1. **Name** - Human-readable name (e.g., "Legal Q&A Endpoint")
+2. **Slug** - URL-safe identifier (e.g., "legal-qa")
+   - Must be 3-64 characters
+   - Lowercase letters, numbers, and hyphens only
+   - No leading/trailing/consecutive hyphens
+   - Must be unique across your Space
+
+**Optional fields:**
+
+3. **Summary** - Brief description (shown in marketplace listings)
+4. **Description** - Detailed markdown description (supports formatting)
+5. **Tags** - Comma-separated tags for organization (e.g., "legal,qa,documents")
+
+### Select data sources
+
+Choose the components for your endpoint:
+
+1. **Dataset** - Select a dataset to provide context (optional)
+   - Only datasets with "running" status are available
+   - The dataset must be healthy (test connection first)
+
+2. **Model** - Select a model to generate responses (optional)
+   - Only models with successful health checks are available
+   - The model must have valid credentials
+
+<Warning>
+You must select at least one component (dataset or model). Endpoints without both components have limited functionality.
+</Warning>
+
+### Choose response type
+
+Select what your endpoint returns:
+
+- **Raw** - Only document search results from the dataset
+  - Requires dataset
+  - Returns: List of matching documents with metadata
+
+- **Summary** - Only AI-generated responses from the model
+  - Requires model
+  - Returns: Generated text response
+
+- **Both** - Document search results plus AI summary
+  - Requires both dataset and model
+  - Returns: Generated response with source documents
+
+### Set publishing status
+
+Choose whether to publish immediately:
+
+- **Published (true)** - Endpoint is active and queryable
+- **Unpublished (false)** - Endpoint exists but cannot be queried (draft mode)
+
+<Note>
+You can toggle the published status later. Use draft mode to test configurations before making the endpoint public.
+</Note>
+
+### Save endpoint
+
+Click **Create Endpoint**. Syft Space validates the configuration and creates your endpoint.
+
+</Steps>
+
+## Endpoint configuration examples
+
+### RAG endpoint for research papers
+
+```json
+{
+  "name": "Research Papers Q&A",
+  "slug": "research-qa",
+  "summary": "Ask questions about ML research papers",
+  "description": "# Research Papers Q&A\n\nQuery our collection of machine learning research papers. Get AI-powered answers with citations to specific papers and sections.",
+  "dataset_id": "123e4567-e89b-12d3-a456-426614174000",
+  "model_id": "223e4567-e89b-12d3-a456-426614174000",
+  "response_type": "both",
+  "published": true,
+  "tags": "research,ml,papers,qa"
+}
+```
+
+### Document search endpoint
+
+```json
+{
+  "name": "Legal Document Search",
+  "slug": "legal-search",
+  "summary": "Search legal documents and cases",
+  "description": "Search our legal document database. Returns relevant excerpts with similarity scores.",
+  "dataset_id": "123e4567-e89b-12d3-a456-426614174000",
+  "model_id": null,
+  "response_type": "raw",
+  "published": true,
+  "tags": "legal,search,documents"
+}
+```
+
+### AI assistant endpoint
+
+```json
+{
+  "name": "General AI Assistant",
+  "slug": "ai-assistant",
+  "summary": "General purpose AI assistant",
+  "description": "Ask anything! This endpoint uses GPT-4 without specific context from a dataset.",
+  "dataset_id": null,
+  "model_id": "223e4567-e89b-12d3-a456-426614174000",
+  "response_type": "summary",
+  "published": true,
+  "tags": "ai,assistant,general"
+}
+```
+
+## Testing endpoints locally
+
+Before publishing, test your endpoint:
+
+<Steps>
+
+### Navigate to endpoint details
+
+Click on your endpoint to view its detail page.
+
+### Use the query interface
+
+The endpoint detail page includes a built-in query interface:
+
+1. Enter your question in the text box
+2. Adjust parameters (optional):
+   - **Similarity threshold** - Minimum match score (0.0-1.0)
+   - **Limit** - Number of documents to retrieve (1-20)
+   - **Max tokens** - Maximum response length
+   - **Temperature** - Response randomness (0.0-2.0)
+3. Click **Send Query**
+
+### Review results
+
+Depending on your response type:
+
+**Raw responses:**
+```json
+{
+  "references": {
+    "documents": [
+      {
+        "document_id": "doc1",
+        "content": "Machine learning is...",
+        "metadata": {
+          "file_name": "intro-to-ml.pdf",
+          "page_numbers": "1,2"
+        },
+        "similarity_score": 0.92
+      }
+    ],
+    "cost": 0.001
+  }
+}
+```
+
+**Summary responses:**
+```json
+{
+  "summary": {
+    "model": "gpt-4",
+    "message": {
+      "role": "assistant",
+      "content": "Machine learning is a subset of AI...",
+      "tokens": 45
+    },
+    "usage": {
+      "prompt_tokens": 20,
+      "completion_tokens": 45,
+      "total_tokens": 65
+    },
+    "cost": 0.0025
+  }
+}
+```
+
+**Both responses:**
+```json
+{
+  "summary": {
+    "model": "gpt-4",
+    "message": {
+      "role": "assistant",
+      "content": "Based on the documents, machine learning is...",
+      "tokens": 67
+    },
+    "usage": {
+      "prompt_tokens": 150,
+      "completion_tokens": 67,
+      "total_tokens": 217
+    },
+    "cost": 0.0085
+  },
+  "references": {
+    "documents": [
+      {
+        "document_id": "doc1",
+        "content": "Machine learning is...",
+        "similarity_score": 0.92
+      }
+    ],
+    "cost": 0.001
+  }
+}
+```
+
+</Steps>
+
+## Querying endpoints via API
+
+Once published, query your endpoint programmatically:
+
+### Authentication
+
+All endpoint queries require authentication using a SyftHub satellite token:
+
+```bash
+Authorization: Bearer <satellite-token>
+```
+
+The token contains your verified email, which is used for access control and accounting.
+
+### Query request
+
+**Endpoint:** `POST /api/v1/endpoints/{slug}/query`
+
+**Headers:**
+```
+Content-Type: application/json
+Authorization: Bearer <satellite-token>
+```
+
+**Body:**
+```json
+{
+  "messages": [
+    {"role": "user", "content": "What is machine learning?"}
+  ],
+  "similarity_threshold": 0.5,
+  "limit": 5,
+  "include_metadata": true,
+  "max_tokens": 150,
+  "temperature": 0.7,
+  "transaction_token": "optional-accounting-token"
+}
+```
+
+**Parameters:**
+
+- `messages` - Conversation history (required)
+  - Can be a string or array of message objects
+  - Each message has `role` (user/assistant/system) and `content`
+- `similarity_threshold` - Minimum similarity for matches (0.0-1.0, default: 0.5)
+- `limit` - Maximum documents to return (default: 5)
+- `include_metadata` - Include document metadata (default: true)
+- `max_tokens` - Maximum tokens to generate (default: 100)
+- `temperature` - Response randomness (0.0-2.0, default: 0.7)
+- `stop_sequences` - Strings that stop generation (default: ["\n"])
+- `stream` - Stream response chunks (default: false)
+- `presence_penalty` - Topic repetition penalty (-2.0 to 2.0, default: 0.0)
+- `frequency_penalty` - Word repetition penalty (-2.0 to 2.0, default: 0.0)
+- `transaction_token` - Optional token for accounting (JWT format)
+
+### cURL example
+
+```bash
+curl -X POST http://localhost:8080/api/v1/endpoints/research-qa/query \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer your-satellite-token" \
+  -d '{
+    "messages": [
+      {"role": "user", "content": "What are transformers in deep learning?"}
+    ],
+    "similarity_threshold": 0.7,
+    "limit": 3,
+    "max_tokens": 200,
+    "temperature": 0.5
+  }'
+```
+
+### Python example
+
+```python
+import requests
+
+url = "http://localhost:8080/api/v1/endpoints/research-qa/query"
+headers = {
+    "Content-Type": "application/json",
+    "Authorization": "Bearer your-satellite-token"
+}
+payload = {
+    "messages": [
+        {"role": "user", "content": "What are transformers in deep learning?"}
+    ],
+    "similarity_threshold": 0.7,
+    "limit": 3,
+    "max_tokens": 200,
+    "temperature": 0.5
+}
+
+response = requests.post(url, json=payload, headers=headers)
+result = response.json()
+
+if response.status_code == 200:
+    if "summary" in result:
+        print("AI Response:", result["summary"]["message"]["content"])
+    if "references" in result:
+        print("\nSource Documents:")
+        for doc in result["references"]["documents"]:
+            print(f"- {doc['document_id']}: {doc['similarity_score']:.2f}")
+else:
+    print("Error:", result.get("err", "Unknown error"))
+```
+
+### JavaScript example
+
+```javascript
+const query = async (slug, question) => {
+  const response = await fetch(
+    `http://localhost:8080/api/v1/endpoints/${slug}/query`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer your-satellite-token'
+      },
+      body: JSON.stringify({
+        messages: [{ role: 'user', content: question }],
+        similarity_threshold: 0.7,
+        limit: 3,
+        max_tokens: 200,
+        temperature: 0.5
+      })
+    }
+  );
+
+  const result = await response.json();
+  
+  if (response.ok) {
+    return result;
+  } else {
+    throw new Error(result.err || 'Query failed');
+  }
+};
+
+// Usage
+query('research-qa', 'What are transformers in deep learning?')
+  .then(result => {
+    if (result.summary) {
+      console.log('AI Response:', result.summary.message.content);
+    }
+    if (result.references) {
+      console.log('Source Documents:', result.references.documents.length);
+    }
+  })
+  .catch(console.error);
+```
+
+## Error handling
+
+Endpoint queries can fail for several reasons:
+
+### 404 Not Found
+
+**Cause:** Endpoint doesn't exist or slug is incorrect
+
+```json
+{
+  "msg": "Endpoint not found",
+  "err": "Endpoint does not exist for given slug"
+}
+```
+
+### 401 Unauthorized
+
+**Cause:** Missing or invalid authentication token
+
+```json
+{
+  "msg": "Unauthorized user",
+  "err": "Endpoint needs authentication for access"
+}
+```
+
+### 403 Permission Denied
+
+**Cause:** User doesn't have access (blocked by policy)
+
+```json
+{
+  "msg": "Permission Denied",
+  "err": "User denied permission for request user"
+}
+```
+
+### 400 Bad Request
+
+**Cause:** Invalid request parameters
+
+```json
+{
+  "msg": "Bad Request",
+  "err": "Invalid similarity_threshold: must be between 0 and 1"
+}
+```
+
+### 429 Rate Limited
+
+**Cause:** Too many requests (rate limit policy)
+
+```json
+{
+  "msg": "Rate limit exceeded",
+  "err": "Maximum 100 requests per minute exceeded"
+}
+```
+
+## Updating endpoints
+
+You can update certain endpoint properties:
+
+<Steps>
+
+### Navigate to endpoint
+
+Click on the endpoint you want to update.
+
+### Edit properties
+
+Click **Edit** to modify:
+- **Name** - Change the display name
+- **Summary** - Update the brief description
+- **Description** - Modify the detailed markdown description
+
+<Warning>
+You cannot change the slug, dataset, model, or response type after creation. To change these, create a new endpoint.
+</Warning>
+
+### Save changes
+
+Click **Save** to apply your changes.
+
+</Steps>
+
+## Checking slug availability
+
+Before creating an endpoint, verify the slug is available:
+
+**Endpoint:** `POST /api/v1/endpoints/check-slug`
+
+**Body:**
+```json
+{
+  "slug": "my-endpoint",
+  "check_all_marketplaces": true
+}
+```
+
+**Response:**
+```json
+{
+  "slug": "my-endpoint",
+  "local_available": true,
+  "marketplaces": [
+    {
+      "marketplace_id": "...",
+      "available": true,
+      "error": null
+    }
+  ]
+}
+```
+
+<Tip>
+Check slug availability before creating endpoints to avoid conflicts when publishing to SyftHub.
+</Tip>
+
+## Deleting endpoints
+
+Deleting an endpoint removes it from Syft Space:
+
+<Steps>
+
+### Unpublish first (if published)
+
+If the endpoint is published to SyftHub, unpublish it first to notify subscribers.
+
+### Delete endpoint
+
+Click **Delete Endpoint** and confirm the action.
+
+</Steps>
+
+<Note>
+Deleting an endpoint doesn't delete the associated dataset or model. Those components can be reused in other endpoints.
+</Note>
+
+## Best practices
+
+### Naming conventions
+
+1. **Use descriptive names** - "Customer Support Q&A" not "Endpoint 1"
+2. **Keep slugs short** - "support-qa" not "customer-support-questions-and-answers"
+3. **Use consistent tags** - Choose a standard set of tags for your organization
+
+### Performance optimization
+
+1. **Tune similarity thresholds**
+   - Start at 0.5 and adjust based on result quality
+   - Higher values (0.7+) = more precise but fewer results
+   - Lower values (0.3-0.5) = more results but less relevant
+
+2. **Limit document count**
+   - More documents = more context but higher cost
+   - Typical range: 3-5 documents for most use cases
+   - Increase for complex queries requiring broad context
+
+3. **Set appropriate max tokens**
+   - Short answers: 50-100 tokens
+   - Detailed explanations: 200-500 tokens
+   - Long-form content: 500-1000 tokens
+
+### Security considerations
+
+1. **Use policies** - Always add access control and rate limiting
+2. **Monitor usage** - Track query patterns for abuse
+3. **Review responses** - Ensure the endpoint doesn't leak sensitive data
+4. **Test thoroughly** - Try adversarial queries before publishing
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Set policies" icon="shield" href="/guides/setting-policies">
+    Add access control and rate limiting to your endpoints
+  </Card>
+  <Card title="Publish to SyftHub" icon="upload" href="/guides/publishing-to-syfthub">
+    Make your endpoint discoverable on the marketplace
+  </Card>
+</CardGroup>

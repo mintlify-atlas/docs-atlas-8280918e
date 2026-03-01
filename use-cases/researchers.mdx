@@ -1,0 +1,446 @@
+---
+title: Researchers
+description: Turn your papers and notes into a searchable knowledge assistant
+icon: flask
+---
+
+Researchers can use Syft Space to create AI-powered knowledge bases from their papers, notes, and datasets, making years of research instantly queryable without exposing underlying data.
+
+## Why Syft Space for researchers
+
+<CardGroup cols={2}>
+  <Card title="Private by default" icon="lock">
+    Your research data never leaves your control. Share insights, not raw data.
+  </Card>
+  <Card title="Instant recall" icon="bolt">
+    Query years of papers and notes in seconds with natural language.
+  </Card>
+  <Card title="Collaborate safely" icon="users">
+    Let collaborators query your knowledge base without sharing raw files.
+  </Card>
+  <Card title="Preserve context" icon="brain">
+    AI responses cite specific papers and sections, preserving academic rigor.
+  </Card>
+</CardGroup>
+
+## Use cases
+
+### Personal research assistant
+
+Create a searchable AI assistant from all your research materials.
+
+**What to index:**
+- Published papers and preprints
+- Research notes and lab notebooks
+- Literature review collections
+- Conference presentations
+- Grant proposals and reports
+
+**Example queries:**
+- "What methods did I use for analyzing protein structures in 2022?"
+- "Summarize all papers I've read about CRISPR gene editing"
+- "What were the key findings from the Smith et al. dataset?"
+
+**Benefits:**
+- Never lose track of previous work
+- Quickly reference methodology from past papers
+- Onboard new lab members with instant knowledge access
+
+### Lab knowledge base
+
+Make your entire lab's research searchable for all team members.
+
+**What to index:**
+- All lab publications
+- Standard operating procedures
+- Equipment manuals and protocols
+- Meeting notes and decisions
+- Experimental results and datasets
+
+**Example queries:**
+- "How do we calibrate the mass spectrometer?"
+- "What experiments have we done with this particular compound?"
+- "Summarize our findings on drug resistance mechanisms"
+
+**Benefits:**
+- Reduce repetitive questions
+- Preserve institutional knowledge when people leave
+- Speed up literature reviews
+- Improve research reproducibility
+
+### Literature review assistant
+
+Index relevant papers to create a domain-specific search engine.
+
+**What to index:**
+- Papers from your field
+- Key review articles
+- Relevant preprints
+- Books and chapters
+
+**Example queries:**
+- "What are the main approaches to quantum error correction?"
+- "Compare the effectiveness of different vaccine platforms"
+- "What gaps exist in current climate models?"
+
+**Benefits:**
+- Stay current with the literature
+- Find connections across papers
+- Speed up systematic reviews
+- Identify research gaps
+
+### Dataset querying
+
+Make research datasets queryable without exposing raw data.
+
+**What to index:**
+- Dataset documentation
+- Analysis reports
+- Methodology papers
+- Data dictionaries
+
+**Example queries:**
+- "What variables are available in the genomic dataset?"
+- "How was the patient cohort selected?"
+- "What preprocessing steps were applied?"
+
+**Benefits:**
+- Share dataset insights with collaborators
+- Comply with data privacy requirements
+- Enable meta-analyses
+- Reduce data access requests
+
+## Getting started
+
+<Steps>
+  <Step title="Install Syft Space">
+    Choose your installation method:
+    
+    <Tabs>
+      <Tab title="Desktop app">
+        Best for individual researchers:
+        
+        - Download for [macOS](https://github.com/OpenMined/syft-space/releases) or [Linux](https://github.com/OpenMined/syft-space/releases)
+        - Install and launch
+        - No server setup required
+      </Tab>
+      <Tab title="Lab server">
+        For shared lab resources:
+        
+        ```bash
+        docker run -d \
+          --name syft-space \
+          --restart unless-stopped \
+          -p 8080:8080 \
+          -v /var/run/docker.sock:/var/run/docker.sock \
+          -v syft-space-data:/data \
+          ghcr.io/openmined/syft-space:latest
+        ```
+      </Tab>
+    </Tabs>
+    
+    See the [installation guide](/installation) for details.
+  </Step>
+  
+  <Step title="Create a dataset">
+    Organize your research materials:
+    
+    ```bash
+    # Create a dataset for your papers
+    curl -X POST http://localhost:8080/api/v1/datasets/ \
+      -H "Content-Type: application/json" \
+      -d '{
+        "name": "my-research",
+        "dtype": "local_file",
+        "configuration": {
+          "httpPort": 8081,
+          "grpcPort": 50051,
+          "collectionName": "ResearchPapers",
+          "ingestionPath": "~/research/papers"
+        },
+        "summary": "My research papers and notes"
+      }'
+    ```
+    
+    Place your PDFs and documents in the ingestion path. Syft Space automatically indexes them.
+  </Step>
+  
+  <Step title="Connect an AI model">
+    Choose a model provider:
+    
+    <Tabs>
+      <Tab title="OpenAI">
+        ```bash
+        curl -X POST http://localhost:8080/api/v1/models/ \
+          -H "Content-Type: application/json" \
+          -d '{
+            "name": "gpt-4",
+            "dtype": "openai",
+            "configuration": {
+              "api_key": "sk-your-key",
+              "model": "gpt-4-turbo"
+            }
+          }'
+        ```
+      </Tab>
+      <Tab title="Anthropic">
+        ```bash
+        curl -X POST http://localhost:8080/api/v1/models/ \
+          -H "Content-Type: application/json" \
+          -d '{
+            "name": "claude",
+            "dtype": "openai",
+            "configuration": {
+              "api_key": "sk-ant-your-key",
+              "base_url": "https://api.anthropic.com/v1",
+              "model": "claude-3-opus-20240229"
+            }
+          }'
+        ```
+      </Tab>
+      <Tab title="Ollama (local)">
+        ```bash
+        # Run Ollama locally
+        ollama pull llama3
+        
+        # Connect to Syft Space
+        curl -X POST http://localhost:8080/api/v1/models/ \
+          -H "Content-Type: application/json" \
+          -d '{
+            "name": "llama3-local",
+            "dtype": "openai",
+            "configuration": {
+              "base_url": "http://localhost:11434/v1",
+              "model": "llama3",
+              "api_key": "not-needed"
+            }
+          }'
+        ```
+      </Tab>
+    </Tabs>
+  </Step>
+  
+  <Step title="Create a query endpoint">
+    ```bash
+    curl -X POST http://localhost:8080/api/v1/endpoints/ \
+      -H "Content-Type: application/json" \
+      -d '{
+        "name": "Research Assistant",
+        "slug": "my-research",
+        "dataset_id": "<dataset-id>",
+        "model_id": "<model-id>",
+        "response_type": "both"
+      }'
+    ```
+  </Step>
+  
+  <Step title="Start querying">
+    Query your research:
+    
+    ```bash
+    curl -X POST http://localhost:8080/api/v1/endpoints/my-research/query \
+      -H "Content-Type: application/json" \
+      -d '{
+        "messages": [
+          {"role": "user", "content": "What were my main findings on protein folding?"}
+        ],
+        "similarity_threshold": 0.7,
+        "limit": 5
+      }'
+    ```
+    
+    Or use the web interface at http://localhost:8080
+  </Step>
+</Steps>
+
+## Best practices
+
+### Organizing research materials
+
+<AccordionGroup>
+  <Accordion title="Create topic-specific datasets">
+    Organize by research area or project:
+    
+    - `protein-folding` - Papers on protein structure
+    - `lab-protocols` - SOPs and procedures
+    - `lit-review-2025` - Papers for current review
+    - `grant-materials` - Proposals and reports
+  </Accordion>
+  
+  <Accordion title="Include document metadata">
+    Add context to help AI understand your materials:
+    
+    - Add frontmatter with dates, authors, keywords
+    - Use descriptive filenames: `smith_2024_crispr_methods.pdf`
+    - Include README files explaining dataset contents
+  </Accordion>
+  
+  <Accordion title="Keep materials updated">
+    Syft Space watches for new files:
+    
+    - Drop new papers in your ingestion folder
+    - Automatic indexing happens in the background
+    - Update existing files to refresh the index
+  </Accordion>
+</AccordionGroup>
+
+### Privacy and sharing
+
+<CardGroup cols={2}>
+  <Card title="Keep it private" icon="eye-slash">
+    Don't publish endpoints if you want to keep research private. Query locally only.
+  </Card>
+  <Card title="Share with collaborators" icon="user-group">
+    Use access control policies to limit who can query your endpoint.
+  </Card>
+  <Card title="Public knowledge" icon="globe">
+    Publish to SyftHub to share insights with the research community.
+  </Card>
+  <Card title="Rate limit queries" icon="gauge">
+    Prevent abuse by limiting queries per user or per day.
+  </Card>
+</CardGroup>
+
+### Query optimization
+
+<Steps>
+  <Step title="Be specific in queries">
+    Better: "What methods did Smith et al. use for RNA sequencing?"
+    
+    Worse: "Tell me about RNA"
+  </Step>
+  
+  <Step title="Adjust similarity threshold">
+    - Lower threshold (0.5-0.7): Broader search, more results
+    - Higher threshold (0.8-0.9): Stricter matching, fewer results
+  </Step>
+  
+  <Step title="Increase limit for comprehensive answers">
+    Request more source documents for complex questions:
+    
+    ```json
+    {
+      "limit": 10,
+      "similarity_threshold": 0.6
+    }
+    ```
+  </Step>
+  
+  <Step title="Review source citations">
+    Always check which papers the AI is citing to verify accuracy.
+  </Step>
+</Steps>
+
+## Example: PhD researcher
+
+**Setup:**
+- 200 papers from literature review
+- 50 personal research notes
+- 10 published papers
+- 3 lab protocols
+
+**Workflow:**
+1. Drop all PDFs in `~/research/papers/`
+2. Create one dataset: `phd-research`
+3. Query before writing:
+   - "What have I found about X?"
+   - "Which papers support this claim?"
+   - "What methods are commonly used?"
+
+**Benefits:**
+- Wrote thesis 30% faster
+- Never lost track of sources
+- Easily answered reviewer questions
+- Shared knowledge base with advisor
+
+## Example: Research lab
+
+**Setup:**
+- 1,000+ lab papers and protocols
+- 5 years of meeting notes
+- Equipment manuals
+- Experimental procedures
+
+**Workflow:**
+1. Lab server accessible to all members
+2. Everyone can query: "How do we...?"
+3. New members onboard by querying the knowledge base
+4. Reduce time spent answering repetitive questions
+
+**Benefits:**
+- Onboarding time reduced by 50%
+- Institutional knowledge preserved
+- More time for actual research
+- Better protocol compliance
+
+## Advanced features
+
+### Multiple endpoints for different audiences
+
+```bash
+# Private endpoint for personal use
+curl -X POST http://localhost:8080/api/v1/endpoints/ \
+  -d '{"name": "Private Research", "slug": "private", ...}'
+
+# Lab-only endpoint
+curl -X POST http://localhost:8080/api/v1/endpoints/ \
+  -d '{"name": "Lab Knowledge", "slug": "lab", ...}'
+# Add access control policy for lab emails
+
+# Public endpoint for published work
+curl -X POST http://localhost:8080/api/v1/endpoints/ \
+  -d '{"name": "Published Papers", "slug": "public", ...}'
+# Publish to SyftHub
+```
+
+### Integration with research tools
+
+Syft Space provides a REST API that can integrate with:
+
+- Jupyter notebooks for interactive queries
+- Zotero or Mendeley for reference management
+- Notion or Obsidian for note-taking
+- Custom research dashboards
+
+**Example: Query from Jupyter**
+
+```python
+import requests
+
+def query_research(question):
+    response = requests.post(
+        'http://localhost:8080/api/v1/endpoints/my-research/query',
+        json={
+            'messages': [{'role': 'user', 'content': question}],
+            'limit': 5
+        }
+    )
+    return response.json()
+
+# Use in your analysis
+result = query_research("What papers mention protein X?")
+print(result['response'])
+```
+
+## Learn more
+
+<CardGroup cols={2}>
+  <Card title="Datasets" icon="database" href="/space/components/datasets">
+    Learn about managing research materials
+  </Card>
+  <Card title="Models" icon="brain" href="/space/components/models">
+    Choose the right AI model for your needs
+  </Card>
+  <Card title="Endpoints" icon="plug" href="/space/components/endpoints">
+    Create and configure query endpoints
+  </Card>
+  <Card title="API reference" icon="code" href="/space/api">
+    Build custom integrations
+  </Card>
+</CardGroup>
+
+---
+
+<Note>
+  Questions? Join our [community](/resources/support) or check the [installation guide](/installation).
+</Note>

@@ -1,0 +1,194 @@
+---
+title: Changelog
+description: Release history and updates for Syft Space
+---
+
+All notable changes to Syft Space are documented here. We follow [Semantic Versioning](https://semver.org/).
+
+## Version 0.2.8
+
+**Released:** March 2026
+
+### Improvements
+
+- Reduced PDF ingestion memory usage with optimized docling configuration
+- Improved subprocess handling on Windows with better event loop compatibility
+- Enhanced ChromaDB provisioner reliability and dataset deletion safety
+
+### Bug fixes
+
+- Fixed subprocess creation issues on Windows SelectorEventLoop
+- Fixed registry race conditions during dataset operations
+- Resolved asyncio subprocess compatibility issues
+
+## Version 0.2.7
+
+**Released:** February 2026
+
+### Improvements
+
+- Added file logging with rotation and configurable log levels
+- Enhanced exception logging for 500 errors with full tracebacks
+- Improved error diagnostics for troubleshooting
+
+### Bug fixes
+
+- Fixed ChromaDB provisioner to use cross-platform `os.kill` instead of Unix-only commands
+- Fixed ChromaDB client host configuration to point to localhost
+- Fixed model ID type handling in ChatContext schema
+- Fixed backend console window visibility on Windows desktop app
+- Added Windows/Linux Tauri origin to CORS allowed origins
+- Disabled strip and UPX on all platforms to prevent .so file corruption
+
+## Version 0.2.6
+
+**Released:** February 2026
+
+### Improvements
+
+- Enhanced ChromaDB provisioner error logging for debugging import failures
+
+### Bug fixes
+
+- Fixed python312.dll load failure by disabling UPX and strip on Windows
+- Resolved desktop app bundling issues on Windows
+
+## Version 0.2.5
+
+**Released:** February 2026
+
+### Features
+
+- Added configurable search filters for remote Weaviate datasets
+- Implemented system tray functionality for desktop app
+- Added "About" window with version information
+
+### Improvements
+
+- Updated branding with new OpenMined logos and icons
+- Simplified dataset health checks by separating type and provisioner validation
+- Enhanced remote Weaviate filter support with choice of different data types
+- Reduced Linux bundle size from 7.5GB to ~200MB by using CPU-only PyTorch
+- Improved graceful shutdown handling
+
+### Bug fixes
+
+- Fixed ChromaDB health check to use localhost instead of DOCKER_NETWORK_HOST
+- Fixed Docker health check URL configuration
+- Fixed process-wick path in build script
+- Resolved AppImage bundling issues on GitHub Actions Ubuntu runners
+- Fixed dataset deletion cleanup and removed dead code
+- Added ORM cascade delete for dataset and model endpoints
+- Fixed dataset ID type handling as UUID in context classes
+
+## Version 0.2.0
+
+**Released:** January 2026
+
+### Features
+
+- Enhanced dataset handling and context management
+- Integrated dataset type partition deletion on dataset removal
+- Improved data source browsing and management
+
+### Improvements
+
+- Refactored dataset deletion to properly clean up all resources
+- Better integration of dataset types with core system
+
+## Version 0.1.0
+
+**Released:** December 2025
+
+### Initial release
+
+- FastAPI backend with RAG endpoint support
+- Vue 3 frontend with modern UI
+- Dataset management with ChromaDB and Weaviate support
+- Model integration with OpenAI-compatible providers
+- Policy system for rate limiting and access control
+- File ingestion with automatic indexing
+- SyftHub marketplace integration
+- Docker container auto-provisioning
+- Desktop app for macOS and Linux
+
+## Upgrade guide
+
+### From 0.2.x to 0.2.8
+
+No breaking changes. Simply update to the latest version:
+
+<Tabs>
+  <Tab title="Desktop app">
+    The desktop app will auto-update, or download the latest release from [GitHub](https://github.com/OpenMined/syft-space/releases).
+  </Tab>
+  <Tab title="Docker">
+    ```bash
+    docker pull ghcr.io/openmined/syft-space:latest
+    docker stop syft-space
+    docker rm syft-space
+    # Run with your previous configuration
+    docker run -d --name syft-space ...
+    ```
+  </Tab>
+  <Tab title="From source">
+    ```bash
+    git pull origin main
+    ./run.sh
+    ```
+  </Tab>
+</Tabs>
+
+### From 0.1.x to 0.2.x
+
+<Warning>
+  Version 0.2.0 includes database schema changes. Backup your data before upgrading.
+</Warning>
+
+<Steps>
+  <Step title="Backup your database">
+    ```bash
+    # Copy your database file
+    cp ~/.syft-space/app.db ~/.syft-space/app.db.backup
+    ```
+  </Step>
+  
+  <Step title="Update Syft Space">
+    Follow the installation method specific instructions above.
+  </Step>
+  
+  <Step title="Verify migration">
+    Check that your datasets, models, and endpoints are present after the upgrade.
+  </Step>
+</Steps>
+
+Database migrations run automatically on startup. If you encounter issues, set `SYFT_RESET_DB=true` to recreate the database (you will lose data).
+
+## Deprecations
+
+No features are currently deprecated.
+
+## Known issues
+
+### Version 0.2.8
+
+- Large PDF files (>100MB) may cause high memory usage during ingestion
+- Windows desktop app may show console window briefly on startup (cosmetic only)
+
+### Version 0.2.7
+
+- No known issues
+
+## Contributing
+
+See the [contributing guide](/resources/contributing) to learn how to contribute to Syft Space.
+
+## Release notes
+
+Detailed release notes for each version are available on [GitHub Releases](https://github.com/OpenMined/syft-space/releases).
+
+---
+
+<Note>
+  Subscribe to [GitHub releases](https://github.com/OpenMined/syft-space/releases) to get notified about new versions.
+</Note>

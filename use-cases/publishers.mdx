@@ -1,0 +1,348 @@
+---
+title: Publishers and creators
+description: Make your content AI-queryable while maintaining attribution and control
+icon: newspaper
+---
+
+Publishers and content creators can use Syft Space to make their content searchable and queryable through AI while maintaining full control over access, attribution, and monetization.
+
+## Why Syft Space for publishers
+
+<CardGroup cols={2}>
+  <Card title="Maintain control" icon="lock">
+    Your content stays on your infrastructure. Users get answers, not raw files.
+  </Card>
+  <Card title="Enable discovery" icon="magnifying-glass">
+    Make your content AI-searchable and discoverable through SyftHub.
+  </Card>
+  <Card title="Monetize access" icon="dollar-sign">
+    Set pricing for queries and track usage through built-in accounting.
+  </Card>
+  <Card title="Preserve attribution" icon="signature">
+    Every query response can include source attribution and links back to original content.
+  </Card>
+</CardGroup>
+
+## Use cases
+
+### News archives
+
+Make decades of journalism AI-searchable for researchers, historians, and the public.
+
+**Example workflow:**
+- Upload historical archives (PDFs, articles, scans)
+- Create searchable endpoints by topic, time period, or publication
+- Set access policies (free for researchers, paid for commercial use)
+- Users query the archive through natural language
+
+**Benefits:**
+- Monetize historical content without full republishing
+- Enable research without copyright concerns
+- Preserve journalistic heritage
+
+### Magazine back catalogs
+
+Turn your magazine archives into a knowledge assistant for subscribers.
+
+**Example workflow:**
+- Index all magazine issues and articles
+- Create subscriber-only query endpoints
+- Users ask questions and get answers citing specific articles
+- Track which topics drive the most queries
+
+**Benefits:**
+- Add value to existing subscriptions
+- Reduce customer support by letting AI answer common questions
+- Understand reader interests through query analytics
+
+### Educational content
+
+Make textbooks and educational materials queryable for students and educators.
+
+**Example workflow:**
+- Upload textbooks, study guides, and course materials
+- Create grade-level or subject-specific endpoints
+- Students query for explanations, examples, and practice problems
+- Track usage to improve content
+
+**Benefits:**
+- Create AI tutors from existing content
+- License content to educational institutions
+- Provide better student support
+
+## Getting started
+
+<Steps>
+  <Step title="Install Syft Space">
+    Choose your installation method based on your infrastructure:
+    
+    <CardGroup cols={3}>
+      <Card title="Desktop app" icon="desktop">
+        Best for small publishers testing the platform
+      </Card>
+      <Card title="Docker" icon="docker">
+        Recommended for production deployments
+      </Card>
+      <Card title="Cloud VM" icon="cloud">
+        For large-scale operations
+      </Card>
+    </CardGroup>
+    
+    See the [installation guide](/installation) for details.
+  </Step>
+  
+  <Step title="Add your content">
+    <Tabs>
+      <Tab title="Upload files">
+        ```bash
+        # Create a dataset
+        curl -X POST http://localhost:8080/api/v1/datasets/ \
+          -H "Content-Type: application/json" \
+          -d '{
+            "name": "magazine-archive",
+            "dtype": "local_file",
+            "configuration": {
+              "httpPort": 8081,
+              "grpcPort": 50051,
+              "collectionName": "MagazineArchive",
+              "ingestionPath": "/path/to/magazine/pdfs"
+            }
+          }'
+        ```
+        
+        Place your PDFs, documents, and articles in the ingestion path. Syft Space automatically indexes them.
+      </Tab>
+      <Tab title="Connect existing database">
+        If you already have a vector database:
+        
+        ```bash
+        curl -X POST http://localhost:8080/api/v1/datasets/ \
+          -H "Content-Type: application/json" \
+          -d '{
+            "name": "existing-archive",
+            "dtype": "weaviate_remote",
+            "configuration": {
+              "url": "https://your-weaviate-instance.com",
+              "apiKey": "your-api-key",
+              "collectionName": "YourCollection"
+            }
+          }'
+        ```
+      </Tab>
+    </Tabs>
+  </Step>
+  
+  <Step title="Create queryable endpoints">
+    Combine your content with an AI model:
+    
+    ```bash
+    # First, add a model
+    curl -X POST http://localhost:8080/api/v1/models/ \
+      -H "Content-Type: application/json" \
+      -d '{
+        "name": "gpt-4",
+        "dtype": "openai",
+        "configuration": {
+          "api_key": "sk-your-key",
+          "model": "gpt-4-turbo"
+        }
+      }'
+    
+    # Create an endpoint
+    curl -X POST http://localhost:8080/api/v1/endpoints/ \
+      -H "Content-Type: application/json" \
+      -d '{
+        "name": "Magazine Archive Query",
+        "slug": "magazine-archive",
+        "dataset_id": "<dataset-id>",
+        "model_id": "<model-id>",
+        "response_type": "both"
+      }'
+    ```
+  </Step>
+  
+  <Step title="Set access policies">
+    Control who can access your content and how:
+    
+    <Tabs>
+      <Tab title="Rate limiting">
+        ```bash
+        curl -X POST http://localhost:8080/api/v1/policies/ \
+          -H "Content-Type: application/json" \
+          -d '{
+            "name": "Standard Rate Limit",
+            "dtype": "rate_limit",
+            "configuration": {
+              "limit": "100/day",
+              "scope": "user"
+            },
+            "endpoint_id": "<endpoint-id>"
+          }'
+        ```
+      </Tab>
+      <Tab title="Access control">
+        ```bash
+        curl -X POST http://localhost:8080/api/v1/policies/ \
+          -H "Content-Type: application/json" \
+          -d '{
+            "name": "Subscriber Only",
+            "dtype": "access",
+            "configuration": {
+              "allowlist": ["subscriber@example.com"],
+              "mode": "allowlist"
+            },
+            "endpoint_id": "<endpoint-id>"
+          }'
+        ```
+      </Tab>
+      <Tab title="Usage tracking">
+        ```bash
+        curl -X POST http://localhost:8080/api/v1/policies/ \
+          -H "Content-Type: application/json" \
+          -d '{
+            "name": "Track Usage",
+            "dtype": "accounting",
+            "configuration": {
+              "track_tokens": true,
+              "track_cost": true
+            },
+            "endpoint_id": "<endpoint-id>"
+          }'
+        ```
+      </Tab>
+    </Tabs>
+  </Step>
+  
+  <Step title="Publish to SyftHub">
+    Make your endpoint discoverable:
+    
+    1. Register on SyftHub through the UI or API
+    2. Publish your endpoint:
+       ```bash
+       curl -X POST http://localhost:8080/api/v1/endpoints/magazine-archive/publish \
+         -H "Content-Type: application/json" \
+         -d '{
+           "visibility": "public",
+           "description": "Query our complete magazine archive from 1980-2025"
+         }'
+       ```
+    3. Your endpoint is now discoverable at [syfthub.openmined.org](https://syfthub.openmined.org)
+  </Step>
+</Steps>
+
+## Best practices
+
+### Content organization
+
+<AccordionGroup>
+  <Accordion title="Organize by topic or time period">
+    Create separate datasets for different topics or time periods:
+    
+    - `sports-1990-2000` - Sports coverage from the 90s
+    - `politics-archive` - All political journalism
+    - `lifestyle-recent` - Recent lifestyle content
+    
+    This allows different pricing and access policies for different content.
+  </Accordion>
+  
+  <Accordion title="Include metadata in documents">
+    Add metadata to help AI provide better context:
+    
+    - Publication date
+    - Author names
+    - Article categories/tags
+    - Original URL or reference
+    
+    This metadata can be included in query responses.
+  </Accordion>
+  
+  <Accordion title="Set up multiple endpoints">
+    Create different endpoints for different audiences:
+    
+    - `archive-free` - Limited free access for discovery
+    - `archive-premium` - Full access for subscribers
+    - `archive-research` - Academic pricing with higher limits
+  </Accordion>
+</AccordionGroup>
+
+### Monetization strategies
+
+<CardGroup cols={2}>
+  <Card title="Freemium model" icon="gift">
+    Offer limited free queries to drive discovery, then charge for unlimited access.
+  </Card>
+  <Card title="Subscription tiers" icon="layer-group">
+    Different query limits and features for different subscription levels.
+  </Card>
+  <Card title="Pay-per-query" icon="coins">
+    Charge per query or per token used, tracked automatically.
+  </Card>
+  <Card title="Institutional licensing" icon="building">
+    Provide unlimited access to universities, libraries, or companies.
+  </Card>
+</CardGroup>
+
+### Quality and attribution
+
+<Steps>
+  <Step title="Test your endpoints">
+    Query your endpoints with common questions to ensure quality responses:
+    
+    ```bash
+    curl -X POST http://localhost:8080/api/v1/endpoints/magazine-archive/query \
+      -H "Content-Type: application/json" \
+      -d '{
+        "messages": [
+          {"role": "user", "content": "What articles covered climate change in 1995?"}
+        ]
+      }'
+    ```
+  </Step>
+  
+  <Step title="Include attribution in responses">
+    Configure your endpoint to return source citations with every answer.
+  </Step>
+  
+  <Step title="Monitor usage analytics">
+    Track which topics get the most queries to understand reader interests and inform future content.
+  </Step>
+</Steps>
+
+## Example: News publisher
+
+A regional newspaper with 50 years of archives:
+
+**Setup:**
+- 500,000 articles indexed across 5 decades
+- 3 endpoints: Free (10 queries/day), Basic ($10/month, 500 queries), Pro ($50/month, unlimited)
+- Topics: local news, sports, politics, business, lifestyle
+
+**Results:**
+- 1,000 free users discovering content
+- 150 paid subscribers ($2,000/month revenue)
+- 20 institutional licenses ($10,000/month)
+- Reduced customer support calls by 40%
+- New revenue stream from historical content
+
+## Learn more
+
+<CardGroup cols={2}>
+  <Card title="Datasets" icon="database" href="/space/components/datasets">
+    Learn about managing your content
+  </Card>
+  <Card title="Endpoints" icon="plug" href="/space/components/endpoints">
+    Create and configure query endpoints
+  </Card>
+  <Card title="Policies" icon="shield" href="/space/components/policies">
+    Set up access control and rate limiting
+  </Card>
+  <Card title="API reference" icon="code" href="/space/api">
+    Complete API documentation
+  </Card>
+</CardGroup>
+
+---
+
+<Note>
+  Need help getting started? Join our [community](/resources/support) or check the [installation guide](/installation).
+</Note>

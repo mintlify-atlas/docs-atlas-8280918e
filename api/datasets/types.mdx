@@ -1,0 +1,320 @@
+---
+title: Dataset types
+description: Available dataset types and their configuration schemas
+---
+
+Dataset types define how data is stored, indexed, and queried in Syft Space. Each type has a unique configuration schema and capabilities.
+
+## List dataset types
+
+Retrieve all available dataset types with their configuration schemas.
+
+### Request
+
+<ParamField path="GET" type="string">
+  `/datasets/types/`
+</ParamField>
+
+### Authentication
+
+Requires authentication via tenant credentials.
+
+### Response
+
+Returns an array of dataset type information:
+
+<ResponseField name="name" type="string">
+  Unique name of the dataset type
+</ResponseField>
+
+<ResponseField name="description" type="string">
+  Description of what the dataset type does
+</ResponseField>
+
+<ResponseField name="config_schema" type="object">
+  JSON Schema defining required and optional configuration fields
+</ResponseField>
+
+<ResponseField name="icon" type="string">
+  Icon identifier for the dataset type
+</ResponseField>
+
+<ResponseField name="enabled" type="boolean">
+  Whether the dataset type is currently enabled
+</ResponseField>
+
+<RequestExample>
+```bash cURL
+curl https://your-domain.com/datasets/types/ \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+</RequestExample>
+
+<ResponseExample>
+```json 200 OK
+[
+  {
+    "name": "local_file",
+    "description": "Local filesystem dataset with ChromaDB vector search. Automatically watches directories and ingests supported file types.",
+    "config_schema": {
+      "type": "object",
+      "properties": {
+        "collectionName": {
+          "type": "string",
+          "description": "Name of the ChromaDB collection (alphanumeric and underscores only)"
+        },
+        "httpPort": {
+          "type": "integer",
+          "description": "ChromaDB server HTTP port",
+          "default": 8100
+        },
+        "ingestionPaths": {
+          "type": "array",
+          "description": "List of file or directory paths to watch and ingest",
+          "items": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "fileTypes": {
+          "type": "array",
+          "description": "Allowed file extensions",
+          "items": {
+            "type": "string",
+            "enum": [".pdf", ".txt", ".html", ".xlsx", ".docx", ".md", ".csv", ".json"]
+          }
+        }
+      },
+      "required": ["collectionName", "ingestionPaths", "fileTypes"]
+    },
+    "icon": "folder",
+    "enabled": true
+  },
+  {
+    "name": "remote_weaviate",
+    "description": "Remote Weaviate dataset type that allows you to query your data from a remote Weaviate server.",
+    "config_schema": {
+      "type": "object",
+      "properties": {
+        "http_url": {
+          "type": "string",
+          "format": "uri",
+          "description": "The HTTP URL of the Weaviate server"
+        },
+        "grpc_url": {
+          "type": "string",
+          "format": "uri",
+          "description": "The gRPC URL of the Weaviate server"
+        },
+        "api_key": {
+          "type": "string",
+          "description": "The API key for the Weaviate server"
+        },
+        "collection_name": {
+          "type": "string",
+          "description": "The name of the Weaviate collection"
+        },
+        "headers": {
+          "type": "object",
+          "description": "Additional HTTP headers for third-party API keys",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "default_similarity_threshold": {
+          "type": "number",
+          "description": "The default similarity threshold for searches",
+          "default": 0.5
+        },
+        "content_property": {
+          "type": "string",
+          "description": "Property name to use as main content"
+        },
+        "metadata_properties": {
+          "type": "array",
+          "description": "Properties to include in metadata",
+          "items": {
+            "type": "string"
+          }
+        },
+        "filters": {
+          "type": "object",
+          "description": "Filter conditions for search queries"
+        }
+      },
+      "required": ["http_url", "grpc_url", "api_key", "collection_name"]
+    },
+    "icon": "database",
+    "enabled": true
+  }
+]
+```
+</ResponseExample>
+
+## Get dataset type
+
+Retrieve information about a specific dataset type.
+
+### Request
+
+<ParamField path="GET" type="string">
+  `/datasets/types/{name}`
+</ParamField>
+
+### Path parameters
+
+<ParamField path="name" type="string" required>
+  The name of the dataset type (e.g., `local_file`, `remote_weaviate`)
+</ParamField>
+
+### Response
+
+Returns a single dataset type object with the same structure as the list endpoint.
+
+<RequestExample>
+```bash cURL
+curl https://your-domain.com/datasets/types/local_file \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+</RequestExample>
+
+<ResponseExample>
+```json 200 OK
+{
+  "name": "local_file",
+  "description": "Local filesystem dataset with ChromaDB vector search. Automatically watches directories and ingests supported file types.",
+  "config_schema": {
+    "type": "object",
+    "properties": {
+      "collectionName": {
+        "type": "string",
+        "description": "Name of the ChromaDB collection (alphanumeric and underscores only)"
+      },
+      "httpPort": {
+        "type": "integer",
+        "description": "ChromaDB server HTTP port",
+        "default": 8100
+      },
+      "ingestionPaths": {
+        "type": "array",
+        "description": "List of file or directory paths to watch and ingest"
+      },
+      "fileTypes": {
+        "type": "array",
+        "description": "Allowed file extensions"
+      }
+    },
+    "required": ["collectionName", "ingestionPaths", "fileTypes"]
+  },
+  "icon": "folder",
+  "enabled": true
+}
+```
+
+```json 404 Not Found
+{
+  "detail": "Dataset type 'unknown_type' not found"
+}
+```
+</ResponseExample>
+
+## Get configuration schema
+
+Retrieve only the configuration schema for a dataset type.
+
+### Request
+
+<ParamField path="GET" type="string">
+  `/datasets/types/{name}/schema`
+</ParamField>
+
+### Path parameters
+
+<ParamField path="name" type="string" required>
+  The name of the dataset type
+</ParamField>
+
+### Response
+
+Returns the JSON Schema object for the dataset type's configuration.
+
+<RequestExample>
+```bash cURL
+curl https://your-domain.com/datasets/types/local_file/schema \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+</RequestExample>
+
+<ResponseExample>
+```json 200 OK
+{
+  "type": "object",
+  "properties": {
+    "collectionName": {
+      "type": "string",
+      "description": "Name of the ChromaDB collection (alphanumeric and underscores only)"
+    },
+    "httpPort": {
+      "type": "integer",
+      "description": "ChromaDB server HTTP port",
+      "default": 8100
+    },
+    "ingestionPaths": {
+      "type": "array",
+      "description": "List of file or directory paths to watch and ingest",
+      "items": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "fileTypes": {
+      "type": "array",
+      "description": "Allowed file extensions",
+      "items": {
+        "type": "string",
+        "enum": [".pdf", ".txt", ".html", ".xlsx", ".docx", ".md", ".csv", ".json"]
+      }
+    }
+  },
+  "required": ["collectionName", "ingestionPaths", "fileTypes"]
+}
+```
+</ResponseExample>
+
+## Available types
+
+### local_file
+
+Local filesystem dataset with ChromaDB for vector search. This type:
+- Automatically watches specified directories for new files
+- Ingests supported file types (PDF, TXT, DOCX, HTML, MD, CSV, JSON, XLSX)
+- Uses ChromaDB running in a local container
+- Supports semantic search using all-MiniLM-L6-v2 embeddings
+- Shares a single ChromaDB provisioner across multiple datasets
+
+**Use cases:** Document collections, local knowledge bases, file monitoring
+
+### remote_weaviate
+
+Connect to an existing remote Weaviate instance. This type:
+- Connects to a Weaviate server you manage
+- Does not provision infrastructure
+- Supports custom filters and metadata extraction
+- Allows flexible content property mapping
+- Supports third-party embedding API keys via headers
+
+**Use cases:** Existing Weaviate deployments, cloud-hosted vectors, enterprise installations

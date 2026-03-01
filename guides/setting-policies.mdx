@@ -1,0 +1,666 @@
+---
+title: Setting policies
+description: Learn how to control access, manage rate limits, and implement accounting for your Syft Space endpoints
+---
+
+Policies let you control who can query your endpoints, how often they can query, and how to track costs. They act as pre and post hooks on endpoint requests, enforcing your rules before returning results. This guide shows you how to configure and manage policies.
+
+## Understanding policy types
+
+Syft Space supports three types of policies:
+
+### Access policy
+
+Controls who can query your endpoint based on email addresses or domain patterns.
+
+**Use cases:**
+- Restrict access to specific users or organizations
+- Allow public access with exceptions
+- Implement allowlists or blocklists
+
+**Configuration:**
+- `mode` - "allow" or "deny"
+- `patterns` - List of email addresses or regex patterns
+
+### Rate limit policy
+
+Limits the number of requests from users over time periods.
+
+**Use cases:**
+- Prevent abuse and excessive usage
+- Implement fair usage policies
+- Protect backend services from overload
+
+**Configuration:**
+- `rate` - Request limit in format "count/period" (e.g., "100/m", "10/s")
+- Supported periods: `s` (second), `m` (minute), `h` (hour), `d` (day)
+
+### Accounting policy
+
+Tracks costs and validates transaction tokens for paid endpoints.
+
+**Use cases:**
+- Monetize your endpoints
+- Track usage costs per user
+- Validate prepaid credits
+
+**Configuration:**
+- `enabled` - Whether to enforce accounting
+- `require_transaction_token` - Whether queries must include valid tokens
+
+<Note>
+You can attach multiple policies to a single endpoint. They execute in order: access control → rate limiting → accounting → query processing.
+</Note>
+
+## Creating policies
+
+<Steps>
+
+### Navigate to policies
+
+From your Syft Space dashboard, click **Policies** in the sidebar, then click **Add Policy**.
+
+### Select policy type
+
+Choose the type of policy you want to create:
+- Access
+- Rate Limit
+- Accounting
+
+### Configure policy settings
+
+Fill in the configuration based on your selected policy type (see sections below).
+
+### Name your policy
+
+Give the policy a descriptive name (e.g., "Allow organization members only").
+
+### Attach to endpoint
+
+Select the endpoint this policy should protect.
+
+### Save policy
+
+Click **Create Policy**. The policy takes effect immediately.
+
+</Steps>
+
+## Access policy configuration
+
+Access policies use email patterns to control who can query your endpoint.
+
+### Allow mode (allowlist)
+
+Only specified users/domains can query:
+
+```json
+{
+  "name": "Organization members only",
+  "policy_type": "access",
+  "configuration": {
+    "mode": "allow",
+    "patterns": [
+      "alice@company.com",
+      "bob@company.com",
+      ".*@company\\.com$"
+    ]
+  },
+  "endpoint_id": "123e4567-e89b-12d3-a456-426614174000"
+}
+```
+
+**How it works:**
+- Only users matching the patterns can query
+- Patterns can be exact emails or regex patterns
+- Use regex for domain-wide access (e.g., `.*@company\.com$`)
+- Requests from non-matching users receive 403 Permission Denied
+
+### Deny mode (blocklist)
+
+Specified users/domains are blocked from querying:
+
+```json
+{
+  "name": "Block spam domains",
+  "policy_type": "access",
+  "configuration": {
+    "mode": "deny",
+    "patterns": [
+      "spam@example.com",
+      ".*@blocked-domain\\.com$",
+      ".*@tempmail\\..*$"
+    ]
+  },
+  "endpoint_id": "123e4567-e89b-12d3-a456-426614174000"
+}
+```
+
+**How it works:**
+- All users can query except those matching the patterns
+- Useful for blocking known abusers while keeping endpoint public
+- Patterns can be exact emails or regex patterns
+- Matching users receive 403 Permission Denied
+
+### Pattern syntax
+
+**Exact match:**
+```json
+"patterns": ["user@example.com"]
+```
+
+**Domain wildcard:**
+```json
+"patterns": [".*@company\\.com$"]
+```
+Matches: `alice@company.com`, `bob@company.com`, etc.
+
+**Subdomain wildcard:**
+```json
+"patterns": [".*@.*\\.company\\.com$"]
+```
+Matches: `alice@eng.company.com`, `bob@sales.company.com`, etc.
+
+**Multiple domains:**
+```json
+"patterns": [
+  ".*@company\\.com$",
+  ".*@partner\\.org$",
+  "contractor@freelance\\.net"
+]
+```
+
+<Tip>
+Test your regex patterns before deploying. Use a regex testing tool to verify they match expected emails.
+</Tip>
+
+## Rate limit policy configuration
+
+Rate limit policies use the format `count/period` where:
+- `count` - Maximum number of requests
+- `period` - Time window (s, m, h, d)
+
+### Examples
+
+**100 requests per minute:**
+```json
+{
+  "name": "Standard rate limit",
+  "policy_type": "rate_limit",
+  "configuration": {
+    "rate": "100/m"
+  },
+  "endpoint_id": "123e4567-e89b-12d3-a456-426614174000"
+}
+```
+
+**10 requests per second:**
+```json
+{
+  "name": "Burst protection",
+  "policy_type": "rate_limit",
+  "configuration": {
+    "rate": "10/s"
+  },
+  "endpoint_id": "123e4567-e89b-12d3-a456-426614174000"
+}
+```
+
+**1000 requests per hour:**
+```json
+{
+  "name": "Hourly limit",
+  "policy_type": "rate_limit",
+  "configuration": {
+    "rate": "1000/h"
+  },
+  "endpoint_id": "123e4567-e89b-12d3-a456-426614174000"
+}
+```
+
+**50 requests per day:**
+```json
+{
+  "name": "Daily quota",
+  "policy_type": "rate_limit",
+  "configuration": {
+    "rate": "50/d"
+  },
+  "endpoint_id": "123e4567-e89b-12d3-a456-426614174000"
+}
+```
+
+### Rate limit behavior
+
+**Per-user tracking:**
+- Rate limits apply per authenticated user (identified by email)
+- Each user has their own independent quota
+- Counters reset at the end of each time period
+
+**When limit exceeded:**
+- User receives 429 Rate Limited response
+- Response includes:
+  ```json
+  {
+    "msg": "Rate limit exceeded",
+    "err": "Maximum 100 requests per minute exceeded"
+  }
+  ```
+- User must wait until the next time window
+
+**Combining multiple rate limits:**
+
+You can attach multiple rate limit policies to the same endpoint:
+
+```json
+[
+  {"rate": "10/s"},   // No more than 10/second (burst protection)
+  {"rate": "100/m"},  // No more than 100/minute (fair use)
+  {"rate": "1000/d"}  // No more than 1000/day (daily quota)
+]
+```
+
+The most restrictive limit applies. A user must satisfy all rate limits to proceed.
+
+### Choosing appropriate limits
+
+**Generous limits (public endpoints):**
+- 1000/hour or 10,000/day
+- Allows legitimate heavy use
+- Protects against extreme abuse only
+
+**Standard limits (typical endpoints):**
+- 100/minute or 1,000/hour
+- Balances availability with protection
+- Suitable for most use cases
+
+**Strict limits (resource-intensive endpoints):**
+- 10/minute or 100/hour
+- Limits expensive operations
+- Protects backend resources
+
+**Development/testing limits:**
+- 5/minute or 50/hour
+- Prevents runaway test scripts
+- Forces developers to implement proper throttling
+
+## Accounting policy configuration
+
+Accounting policies track costs and optionally require transaction tokens.
+
+### Basic cost tracking
+
+Track costs without requiring payment:
+
+```json
+{
+  "name": "Cost tracking",
+  "policy_type": "accounting",
+  "configuration": {
+    "enabled": true,
+    "require_transaction_token": false
+  },
+  "endpoint_id": "123e4567-e89b-12d3-a456-426614174000"
+}
+```
+
+**Behavior:**
+- Records token usage and costs for each query
+- Allows queries without transaction tokens
+- Useful for analytics and future billing setup
+
+### Paid endpoint with token validation
+
+Require valid transaction tokens for all queries:
+
+```json
+{
+  "name": "Paid endpoint",
+  "policy_type": "accounting",
+  "configuration": {
+    "enabled": true,
+    "require_transaction_token": true
+  },
+  "endpoint_id": "123e4567-e89b-12d3-a456-426614174000"
+}
+```
+
+**Behavior:**
+- Queries must include a valid `transaction_token` in the request
+- Token is validated against the accounting system
+- Invalid or missing tokens result in 403 Permission Denied
+- Token balance is checked and decremented on success
+
+### Using transaction tokens
+
+When querying a paid endpoint, include the transaction token:
+
+```bash
+curl -X POST http://localhost:8080/api/v1/endpoints/paid-qa/query \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer satellite-token" \
+  -d '{
+    "messages": [{"role": "user", "content": "Question?"}],
+    "transaction_token": "jwt-token-with-credits"
+  }'
+```
+
+**Transaction token format:**
+- JWT (JSON Web Token) format
+- Contains user credits and authorization
+- Issued by the accounting system
+- Validated and decremented on each query
+
+### Cost calculation
+
+Costs are tracked separately for dataset and model operations:
+
+**Dataset costs:**
+- Based on search operations
+- Typically minimal (vector search is cheap)
+
+**Model costs:**
+- Based on token usage (prompt + completion tokens)
+- Varies by model and provider
+- Displayed in query response:
+  ```json
+  {
+    "summary": {
+      "usage": {
+        "prompt_tokens": 150,
+        "completion_tokens": 67,
+        "total_tokens": 217
+      },
+      "cost": 0.0085
+    },
+    "references": {
+      "cost": 0.001
+    }
+  }
+  ```
+
+**Total cost:** Sum of dataset and model costs
+
+## Managing policies
+
+### Listing policies
+
+View all policies for an endpoint:
+
+**Endpoint:** `GET /api/v1/policies?endpoint_id={endpoint_id}`
+
+**Response:**
+```json
+[
+  {
+    "id": "...",
+    "name": "Organization access",
+    "policy_type": "access",
+    "configuration": {...},
+    "endpoint_id": "...",
+    "created_at": "2024-01-15T10:30:00Z"
+  },
+  {
+    "id": "...",
+    "name": "Rate limit 100/m",
+    "policy_type": "rate_limit",
+    "configuration": {...},
+    "endpoint_id": "...",
+    "created_at": "2024-01-15T10:31:00Z"
+  }
+]
+```
+
+### Updating policies
+
+Modify an existing policy:
+
+**Endpoint:** `PATCH /api/v1/policies/{policy_id}`
+
+**Body:**
+```json
+{
+  "name": "Updated policy name",
+  "configuration": {
+    "rate": "200/m"
+  }
+}
+```
+
+<Note>
+You can update the name and configuration, but not the policy type or endpoint ID. To change those, create a new policy.
+</Note>
+
+### Deleting policies
+
+Remove a policy from an endpoint:
+
+**Endpoint:** `DELETE /api/v1/policies/{policy_id}`
+
+<Warning>
+Deleting a policy takes effect immediately. Any in-flight requests will use the old policy, but new requests will not be subject to the deleted policy's rules.
+</Warning>
+
+## Policy execution order
+
+When an endpoint has multiple policies, they execute in this order:
+
+1. **Access policy** - Check if user is allowed
+   - If denied, return 403 immediately
+   - If allowed, continue to next policy
+
+2. **Rate limit policy** - Check if user is within limits
+   - If exceeded, return 429 immediately
+   - If within limits, increment counter and continue
+
+3. **Accounting policy** - Validate transaction token
+   - If required and missing/invalid, return 403 immediately
+   - If valid, record the request and continue
+
+4. **Query processing** - Execute the actual endpoint query
+
+5. **Post-hooks** - After query completes
+   - Accounting policy records actual costs
+   - Decrements transaction token if applicable
+
+## Common policy combinations
+
+### Public endpoint with rate limiting
+
+```json
+[
+  {
+    "name": "Generous rate limit",
+    "policy_type": "rate_limit",
+    "configuration": {"rate": "1000/h"}
+  }
+]
+```
+
+**Use case:** Public endpoint, prevent abuse only
+
+### Organization-only endpoint
+
+```json
+[
+  {
+    "name": "Organization members only",
+    "policy_type": "access",
+    "configuration": {
+      "mode": "allow",
+      "patterns": [".*@company\\.com$"]
+    }
+  },
+  {
+    "name": "Fair use rate limit",
+    "policy_type": "rate_limit",
+    "configuration": {"rate": "100/m"}
+  }
+]
+```
+
+**Use case:** Internal endpoint for organization members
+
+### Paid endpoint with access control
+
+```json
+[
+  {
+    "name": "Customers only",
+    "policy_type": "access",
+    "configuration": {
+      "mode": "allow",
+      "patterns": [
+        ".*@customer1\\.com$",
+        ".*@customer2\\.com$"
+      ]
+    }
+  },
+  {
+    "name": "Rate limit",
+    "policy_type": "rate_limit",
+    "configuration": {"rate": "500/h"}
+  },
+  {
+    "name": "Require payment",
+    "policy_type": "accounting",
+    "configuration": {
+      "enabled": true,
+      "require_transaction_token": true
+    }
+  }
+]
+```
+
+**Use case:** Commercial endpoint with customer access control and payment
+
+### Development endpoint with strict limits
+
+```json
+[
+  {
+    "name": "Developers only",
+    "policy_type": "access",
+    "configuration": {
+      "mode": "allow",
+      "patterns": [".*@company\\.com$"]
+    }
+  },
+  {
+    "name": "Strict development limit",
+    "policy_type": "rate_limit",
+    "configuration": {"rate": "10/m"}
+  }
+]
+```
+
+**Use case:** Development/testing endpoint, prevent runaway scripts
+
+## Monitoring and analytics
+
+Track how policies affect your endpoint usage:
+
+### Policy violations
+
+Monitor when policies block requests:
+- Access denied (403) - User not allowed
+- Rate limited (429) - User exceeded quota
+- Insufficient credits (403) - Transaction token invalid
+
+### Usage patterns
+
+Analyze legitimate usage to adjust policies:
+- Peak request times
+- Top users by query volume
+- Average queries per user
+- Cost per user
+
+### Policy effectiveness
+
+Evaluate if your policies are working:
+- Are rate limits too strict? (many 429s from legitimate users)
+- Are rate limits too loose? (abuse getting through)
+- Is access control configured correctly? (unexpected 403s)
+
+<Tip>
+Start with generous policies and tighten them based on actual usage patterns. It's easier to restrict later than to deal with early user frustration.
+</Tip>
+
+## Troubleshooting
+
+### Users can't access endpoint
+
+**Symptom:** Legitimate users receive 403 Permission Denied
+
+**Solutions:**
+- Check access policy patterns include the user's email domain
+- Verify regex patterns are correct (test with regex tool)
+- Ensure access policy mode is correct (allow vs deny)
+- Check if user's email is verified in their SyftHub account
+
+### Rate limits too restrictive
+
+**Symptom:** Users frequently receive 429 Rate Limited
+
+**Solutions:**
+- Increase the rate limit (e.g., 100/m → 500/m)
+- Use longer time periods for same total (e.g., 100/m → 6000/h)
+- Check if a bot or script is making excessive requests
+- Consider different limits for different user tiers
+
+### Accounting token errors
+
+**Symptom:** Queries fail with transaction token errors
+
+**Solutions:**
+- Verify the transaction token is valid and not expired
+- Check the token has sufficient balance/credits
+- Ensure the token is properly formatted (JWT)
+- Verify the accounting system is accessible
+
+## Best practices
+
+### Start permissive
+
+1. Begin with no policies or very generous limits
+2. Monitor actual usage patterns
+3. Identify abuse or heavy usage
+4. Implement targeted restrictions
+
+### Layer defenses
+
+1. Use multiple policy types together
+2. Access control filters who can query
+3. Rate limits protect against abuse from allowed users
+4. Accounting tracks and limits costs
+
+### Test thoroughly
+
+1. Test policies with various user emails
+2. Verify regex patterns match expected inputs
+3. Test rate limit behavior near the threshold
+4. Ensure error messages are clear and helpful
+
+### Document policies
+
+1. Clearly communicate rate limits to users
+2. Explain access restrictions in endpoint descriptions
+3. Provide contact info for access requests
+4. Document pricing and payment requirements
+
+### Monitor continuously
+
+1. Track policy violations over time
+2. Identify trends in usage patterns
+3. Adjust policies based on data
+4. Be responsive to user feedback
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Publish to SyftHub" icon="upload" href="/guides/publishing-to-syfthub">
+    Make your policy-protected endpoint discoverable
+  </Card>
+  <Card title="Query endpoints" icon="code" href="/guides/querying-endpoints">
+    Learn how to query endpoints programmatically
+  </Card>
+</CardGroup>

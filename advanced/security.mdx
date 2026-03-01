@@ -1,0 +1,376 @@
+---
+title: Security
+description: Security architecture and best practices for Syft Space
+---
+
+Syft Space implements multiple layers of security to protect your data and control access to your endpoints.
+
+## Authentication
+
+### JWT token-based authentication
+
+Local authentication uses JSON Web Tokens:
+
+```python
+# Login flow
+POST /api/v1/auth/login
+{
+  "email": "user@example.com",
+  "password": "secure-password"
+}
+
+# Response includes JWT token
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIs...",
+  "token_type": "bearer"
+}
+```
+
+**Token verification:**
+
+- Tokens are signed with a secret key
+- Include user email and tenant name in claims
+- Expire after configured time period
+- Validated on every request
+
+### SyftHub satellite tokens
+
+For marketplace integration:
+
+```http
+Authorization: Bearer <satellite-token>
+```
+
+Satellite tokens:
+
+- Issued by SyftHub marketplace
+- Contain user identity and permissions
+- Validated via public key cryptography
+- Short-lived with automatic refresh
+
+## Authorization
+
+### Tenant isolation
+
+All data is scoped to tenants:
+
+```python
+class BaseEntity(SQLModel):
+    tenant_name: str  # Mandatory for all entities
+```
+
+**Middleware enforcement:**
+
+```python
+class TenantMiddleware:
+    async def __call__(self, request, call_next):
+        tenant = extract_tenant(request)
+        request.state.tenant = tenant
+        return await call_next(request)
+```
+
+Users can only access data from their own tenant.
+
+### Policy-based access control
+
+Endpoints can have access policies:
+
+**Allow mode** (whitelist):
+
+```json
+{
+  "policy_type": "access",
+  "configuration": {
+    "mode": "allow",
+    "patterns": [
+      "*@company.com",
+      "partner@external.com"
+    ]
+  }
+}
+```
+
+**Deny mode** (blacklist):
+
+```json
+{
+  "policy_type": "access",
+  "configuration": {
+    "mode": "deny",
+    "patterns": [
+      "*@competitor.com"
+    ]
+  }
+}
+```
+
+### Role-based access control
+
+Future enhancement for admin roles:
+
+- **Owner** - Full control
+- **Admin** - Manage endpoints and policies
+- **User** - Query endpoints only
+- **Viewer** - Read-only access
+
+## Data protection
+
+### Data at rest
+
+**SQLite database:**
+
+- Stored in `~/.syft-space/app.db`
+- File-level encryption supported via OS
+- Regular backups recommended
+
+**Vector databases:**
+
+- Data persisted in Docker volumes
+- Isolated per tenant
+- Cleanup on dataset deletion
+
+### Data in transit
+
+**HTTPS/TLS:**
+
+```nginx
+server {
+    listen 443 ssl;
+    ssl_certificate /path/to/cert.pem;
+    ssl_certificate_key /path/to/key.pem;
+    
+    location / {
+        proxy_pass http://localhost:8080;
+    }
+}
+```
+
+**Recommendations:**
+
+- Use TLS 1.2 or higher
+- Use strong cipher suites
+- Enable HSTS headers
+- Use valid certificates (Let's Encrypt)
+
+### Secrets management
+
+**API keys and tokens:**
+
+```python
+# Stored encrypted in database
+class Model(BaseEntity):
+    api_key: str  # Encrypted before storage
+```
+
+**Environment variables:**
+
+```bash
+# Never commit .env files
+OPENAI_API_KEY=sk-...
+ANTHROPIC_API_KEY=sk-ant-...
+```
+
+**Recommendations:**
+
+- Use secret management tools (Vault, AWS Secrets Manager)
+- Rotate API keys regularly
+- Use separate keys per environment
+- Never log sensitive values
+
+## Input validation
+
+### Pydantic schemas
+
+All inputs validated:
+
+```python
+class CreateEndpointRequest(BaseModel):
+    name: str = Field(min_length=1, max_length=255)
+    slug: str = Field(pattern=r'^[a-z0-9-]{3,64}$')
+    dataset_id: UUID
+    model_id: UUID
+```
+
+**Prevents:**
+
+- SQL injection (via SQLModel ORM)
+- XSS attacks (via input sanitization)
+- Buffer overflows (via length limits)
+- Invalid data types
+
+### Rate limiting
+
+Protect against abuse:
+
+```python
+{
+  "policy_type": "rate_limit",
+  "configuration": {
+    "requests_per_period": 100,
+    "period_seconds": 3600,
+    "scope": "per_user"
+  }
+}
+```
+
+**Global rate limiting:**
+
+```python
+# In middleware
+rate_limiter = RateLimiter(
+    requests_per_minute=1000,
+    burst_size=100
+)
+```
+
+## Network security
+
+### CORS configuration
+
+```python
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",  # Development
+        "https://yourdomain.com"  # Production
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+```
+
+<Warning>
+  Never use `allow_origins=["*"]` in production.
+</Warning>
+
+### Firewall rules
+
+**Recommended iptables configuration:**
+
+```bash
+# Allow only necessary ports
+iptables -A INPUT -p tcp --dport 8080 -j ACCEPT  # API
+iptables -A INPUT -p tcp --dport 443 -j ACCEPT   # HTTPS
+iptables -A INPUT -p tcp --dport 22 -j ACCEPT    # SSH
+iptables -A INPUT -j DROP  # Block all other incoming
+```
+
+### Docker socket security
+
+<Warning>
+  Mounting `/var/run/docker.sock` gives container root access to host. Only use on trusted systems.
+</Warning>
+
+**Alternatives:**
+
+1. **Docker-in-Docker** (DinD)
+2. **Rootless Docker**
+3. **Pre-provisioned databases** (no dynamic provisioning)
+
+## Audit logging
+
+Track all security-relevant events:
+
+```python
+logger.info(
+    "endpoint_queried",
+    endpoint=endpoint.slug,
+    user=user_email,
+    ip=request.client.host,
+    tokens=usage.total_tokens,
+    cost=usage.cost
+)
+```
+
+**Logged events:**
+
+- Authentication attempts
+- Authorization failures
+- Endpoint queries
+- Policy violations
+- Configuration changes
+
+## Compliance
+
+### GDPR compliance
+
+- **Right to access** - Users can export their data
+- **Right to erasure** - Users can delete their account
+- **Data minimization** - Only collect necessary data
+- **Purpose limitation** - Data used only as specified
+
+### Data retention
+
+```python
+# Configure retention policies
+RETENTION_DAYS = 90
+
+# Periodic cleanup
+async def cleanup_old_logs():
+    cutoff = datetime.now() - timedelta(days=RETENTION_DAYS)
+    await db.execute(
+        delete(AuditLog).where(AuditLog.created_at < cutoff)
+    )
+```
+
+## Security best practices
+
+<Accordion title="Production deployment">
+  - Use HTTPS with valid certificates
+  - Enable firewall and restrict ports
+  - Use strong passwords and 2FA
+  - Keep software updated
+  - Regular security audits
+</Accordion>
+
+<Accordion title="API keys and secrets">
+  - Store in environment variables or secret manager
+  - Rotate regularly (every 90 days)
+  - Use separate keys per environment
+  - Never commit to version control
+  - Revoke compromised keys immediately
+</Accordion>
+
+<Accordion title="Access control">
+  - Implement least privilege principle
+  - Use access policies on all endpoints
+  - Enable rate limiting
+  - Monitor for suspicious activity
+  - Regular access reviews
+</Accordion>
+
+<Accordion title="Data protection">
+  - Encrypt data in transit (HTTPS/TLS)
+  - Encrypt sensitive data at rest
+  - Regular backups to secure location
+  - Test restore procedures
+  - Secure backup storage
+</Accordion>
+
+## Vulnerability reporting
+
+If you discover a security vulnerability:
+
+<Steps>
+  <Step title="Do not create public GitHub issue">
+    Security issues should be reported privately.
+  </Step>
+  <Step title="Email security team">
+    Send details to [security@openmined.org](mailto:security@openmined.org)
+  </Step>
+  <Step title="Provide details">
+    Include:
+    - Description of vulnerability
+    - Steps to reproduce
+    - Potential impact
+    - Suggested fix (if any)
+  </Step>
+  <Step title="Wait for response">
+    Team will acknowledge within 48 hours and provide timeline for fix.
+  </Step>
+</Steps>
+
+<Note>
+  Responsible disclosure is appreciated. We aim to fix critical vulnerabilities within 30 days.
+</Note>

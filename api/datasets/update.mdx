@@ -1,0 +1,219 @@
+---
+title: Update dataset
+description: Update dataset metadata (name, summary, or tags)
+---
+
+Perform a partial update on a dataset. You can update the name, summary, and/or tags. At least one field must be provided. The dataset name must remain unique per tenant.
+
+<Note>
+This endpoint only updates metadata fields. Dataset configuration and type cannot be changed after creation.
+</Note>
+
+## Request
+
+<ParamField path="PATCH" type="string">
+  `/datasets/{name}`
+</ParamField>
+
+### Path parameters
+
+<ParamField path="name" type="string" required>
+  The current name of the dataset to update
+</ParamField>
+
+### Authentication
+
+Requires authentication via tenant credentials.
+
+### Request body
+
+At least one field must be provided:
+
+<ParamField body="name" type="string">
+  New dataset name (must be unique per tenant)
+</ParamField>
+
+<ParamField body="summary" type="string">
+  Updated summary description
+</ParamField>
+
+<ParamField body="tags" type="string">
+  Updated comma-separated tags
+</ParamField>
+
+## Response
+
+Returns the complete updated dataset object:
+
+<ResponseField name="id" type="string">
+  Unique identifier (UUID) for the dataset
+</ResponseField>
+
+<ResponseField name="name" type="string">
+  Updated dataset name
+</ResponseField>
+
+<ResponseField name="dtype" type="string">
+  Dataset type name (unchanged)
+</ResponseField>
+
+<ResponseField name="configuration" type="object">
+  Dataset configuration (unchanged)
+</ResponseField>
+
+<ResponseField name="summary" type="string">
+  Updated summary
+</ResponseField>
+
+<ResponseField name="tags" type="string">
+  Updated tags
+</ResponseField>
+
+<ResponseField name="provisioner_state" type="object" nullable>
+  Provisioner state information (for local dataset types)
+
+  <Expandable title="properties">
+    <ResponseField name="status" type="string">
+      Provisioner status: `stopped`, `starting`, `running`, `stopping`, or `error`
+    </ResponseField>
+
+    <ResponseField name="state" type="object" nullable>
+      Provisioner state including connection config and runtime info
+    </ResponseField>
+
+    <ResponseField name="started_at" type="string" nullable>
+      ISO 8601 timestamp when provisioner was started
+    </ResponseField>
+
+    <ResponseField name="stopped_at" type="string" nullable>
+      ISO 8601 timestamp when provisioner was stopped
+    </ResponseField>
+
+    <ResponseField name="error" type="string" nullable>
+      Error message if status is `error`
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="created_at" type="string">
+  ISO 8601 timestamp of creation (unchanged)
+</ResponseField>
+
+<ResponseField name="updated_at" type="string">
+  ISO 8601 timestamp of last update (will be current time)
+</ResponseField>
+
+<ResponseField name="connected_endpoints" type="array">
+  List of endpoints connected to this dataset
+
+  <Expandable title="items">
+    <ResponseField name="id" type="string">
+      Endpoint unique identifier
+    </ResponseField>
+
+    <ResponseField name="name" type="string">
+      Endpoint name
+    </ResponseField>
+
+    <ResponseField name="slug" type="string">
+      Endpoint URL slug
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<RequestExample>
+```bash Update all fields
+curl -X PATCH https://your-domain.com/datasets/legal-docs \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -d '{
+    "name": "legal-docs-updated",
+    "summary": "Updated legal documents for RAG analysis",
+    "tags": "legal,documents,analysis,updated"
+  }'
+```
+
+```bash Update name only
+curl -X PATCH https://your-domain.com/datasets/legal-docs \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -d '{
+    "name": "legal-documents"
+  }'
+```
+
+```bash Update tags only
+curl -X PATCH https://your-domain.com/datasets/legal-docs \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -d '{
+    "tags": "legal,compliance,archived"
+  }'
+```
+</RequestExample>
+
+<ResponseExample>
+```json 200 OK
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "name": "legal-docs-updated",
+  "dtype": "local_file",
+  "configuration": {
+    "collectionName": "LegalDocuments",
+    "httpPort": 8100,
+    "ingestionPaths": [
+      {
+        "path": "/home/user/documents/legal",
+        "description": "Legal documents directory"
+      }
+    ],
+    "fileTypes": [".pdf", ".txt", ".docx"]
+  },
+  "summary": "Updated legal documents for RAG analysis",
+  "tags": "legal,documents,analysis,updated",
+  "provisioner_state": {
+    "status": "running",
+    "state": {
+      "httpPort": 8100,
+      "container_id": "abc123def456"
+    },
+    "started_at": "2024-03-15T10:30:00Z",
+    "stopped_at": null,
+    "error": null
+  },
+  "created_at": "2024-03-15T10:30:00Z",
+  "updated_at": "2024-03-15T14:22:00Z",
+  "connected_endpoints": [
+    {
+      "id": "650e8400-e29b-41d4-a716-446655440001",
+      "name": "Legal Search API",
+      "slug": "legal-search"
+    }
+  ]
+}
+```
+
+```json 404 Not Found
+{
+  "detail": "Dataset 'legal-docs' not found"
+}
+```
+
+```json 409 Conflict
+{
+  "detail": "Dataset with name 'legal-docs-updated' already exists"
+}
+```
+
+```json 422 Unprocessable Entity
+{
+  "detail": [
+    {
+      "type": "value_error",
+      "loc": ["body"],
+      "msg": "At least one field (name, summary, or tags) must be provided"
+    }
+  ]
+}
+```
+</ResponseExample>

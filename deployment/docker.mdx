@@ -1,0 +1,371 @@
+---
+title: Docker deployment
+description: Deploy Syft Space using Docker for production-ready containerized environments
+---
+
+Deploy Syft Space using Docker for a production-ready containerized environment. This method provides isolation, easy updates, and simplified dependency management.
+
+## Prerequisites
+
+- Docker 20.10 or later
+- 4GB RAM minimum (8GB recommended)
+- Docker socket access for vector database provisioning
+
+## Quick start
+
+Run Syft Space with a single Docker command:
+
+```bash
+docker run -d \
+    --name syft-space \
+    --restart unless-stopped \
+    -p 8080:8080 \
+    -v /var/run/docker.sock:/var/run/docker.sock \
+    -v /dev/null:/root/.docker/config.json \
+    -v syft-space-data:/data \
+    ghcr.io/openmined/syft-space:latest
+```
+
+Access the application at [http://localhost:8080](http://localhost:8080)
+
+## Volume mounts
+
+### Docker socket
+
+```bash
+-v /var/run/docker.sock:/var/run/docker.sock
+```
+
+Required for automatic provisioning of vector database containers (Weaviate, Qdrant, ChromaDB).
+
+<Warning>
+Mounting the Docker socket gives the container access to your Docker daemon. Only use trusted images and ensure proper network isolation.
+</Warning>
+
+### Data persistence
+
+```bash
+-v syft-space-data:/data
+```
+
+Stores:
+- SQLite database (`/data/app.db`)
+- Application logs (`/data/logs/`)
+- Uploaded documents and datasets
+
+### Home directory (optional)
+
+```bash
+-v ${HOME}:/root
+```
+
+Mount your home directory to persist configuration files and access local resources.
+
+## Environment variables
+
+Configure Syft Space using environment variables:
+
+### Server configuration
+
+```bash
+-e SYFT_PORT=8080                    # Server port (default: 8080)
+-e SYFT_DEBUG=false                  # Enable debug mode
+```
+
+### Database configuration
+
+```bash
+-e SYFT_SQLITE_DB_PATH=/data/app.db  # SQLite database path
+-e SYFT_RESET_DB=false               # Reset database on startup (CAUTION)
+```
+
+<Warning>
+Setting `SYFT_RESET_DB=true` will destroy all data. Only use for development or testing.
+</Warning>
+
+### Authentication
+
+```bash
+-e SYFT_ADMIN_API_KEY=your-secret-key  # Admin API key (empty = no auth)
+```
+
+### External services
+
+```bash
+-e SYFT_DEFAULT_ACCOUNTING_URL=https://syftaccounting.centralus.cloudapp.azure.com/
+-e SYFT_DEFAULT_MARKETPLACE_URL=https://syfthub.openmined.org
+-e SYFT_PUBLIC_URL=https://your-domain.com  # For callbacks/webhooks
+```
+
+### Multi-tenancy
+
+```bash
+-e SYFT_ENABLE_MULTI_TENANCY=false
+-e SYFT_DEFAULT_TENANT_NAME=root
+```
+
+## Docker Compose
+
+For more complex deployments, use Docker Compose:
+
+### Basic setup
+
+Create a `docker-compose.yml` file:
+
+```yaml
+services:
+  syft-space-server:
+    image: ghcr.io/openmined/syft-space:latest
+    container_name: syft-space-server
+    restart: unless-stopped
+    stop_grace_period: 15s
+
+    ports:
+      - "${SYFT_PORT:-8080}:8080"
+
+    volumes:
+      - syft-space-data:/data
+      - ${HOME}:/root
+      - ${HOME}/.docker/run/docker.sock:/var/run/docker.sock
+
+    environment:
+      - DOCKER_HOST=unix:///var/run/docker.sock
+      - SYFT_PORT=8080
+      - SYFT_SQLITE_DB_PATH=/data/app.db
+      - SYFT_DEBUG=${SYFT_DEBUG:-false}
+      - SYFT_RESET_DB=${SYFT_RESET_DB:-false}
+      - SYFT_ENABLE_MULTI_TENANCY=${SYFT_ENABLE_MULTI_TENANCY:-false}
+      - SYFT_DEFAULT_TENANT_NAME=${SYFT_DEFAULT_TENANT_NAME:-root}
+      - SYFT_ADMIN_API_KEY=${SYFT_ADMIN_API_KEY:-}
+      - SYFT_DEFAULT_ACCOUNTING_URL=${SYFT_DEFAULT_ACCOUNTING_URL:-https://syftaccounting.centralus.cloudapp.azure.com/}
+      - SYFT_DEFAULT_MARKETPLACE_URL=${SYFT_DEFAULT_MARKETPLACE_URL:-https://syfthub.openmined.org}
+      - SYFT_PUBLIC_URL=${SYFT_PUBLIC_URL:-}
+
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/api/v1/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 2G
+        reservations:
+          cpus: "0.5"
+          memory: 512M
+
+volumes:
+  syft-space-data:
+    driver: local
+
+networks:
+  default:
+    name: syft-space-network
+```
+
+### Environment file
+
+Create a `.env` file for configuration:
+
+```bash
+# Server
+SYFT_PORT=8080
+SYFT_DEBUG=false
+
+# Database
+SYFT_RESET_DB=false
+
+# Authentication
+SYFT_ADMIN_API_KEY=
+
+# External services
+SYFT_DEFAULT_ACCOUNTING_URL=https://syftaccounting.centralus.cloudapp.azure.com/
+SYFT_DEFAULT_MARKETPLACE_URL=https://syfthub.openmined.org
+SYFT_PUBLIC_URL=
+```
+
+### Run with Docker Compose
+
+<CodeGroup>
+
+```bash Start
+docker compose up -d
+```
+
+```bash Stop
+docker compose down
+```
+
+```bash View logs
+docker compose logs -f
+```
+
+```bash Restart
+docker compose restart
+```
+
+```bash Update
+docker compose pull
+docker compose up -d
+```
+
+</CodeGroup>
+
+## Building from source
+
+Build your own Docker image:
+
+### Build the frontend
+
+```bash
+cd frontend
+bun install
+bun run build
+cd ..
+```
+
+### Build the Docker image
+
+<CodeGroup>
+
+```bash Default (Python 3.12)
+docker build -t syft-space-server .
+```
+
+```bash Custom Python version
+docker build --build-arg PYTHON_VERSION=3.12 -t syft-space-server .
+```
+
+```bash Development build
+docker build --target development -t syft-space-server:dev .
+```
+
+</CodeGroup>
+
+### Run your custom image
+
+```bash
+docker run -d \
+    --name syft-space \
+    -p 8080:8080 \
+    -v /var/run/docker.sock:/var/run/docker.sock \
+    -v syft-space-data:/data \
+    syft-space-server:latest
+```
+
+## Health checks
+
+The container includes a built-in health check:
+
+```bash
+# Check container health status
+docker ps --filter name=syft-space
+
+# View health check logs
+docker inspect syft-space | jq '.[0].State.Health'
+```
+
+The health check pings `/api/v1/health` every 30 seconds with a 10-second timeout.
+
+## Resource limits
+
+Adjust resource limits based on your workload:
+
+```yaml
+deploy:
+  resources:
+    limits:
+      cpus: "4.0"      # Maximum CPU cores
+      memory: 4G       # Maximum memory
+    reservations:
+      cpus: "1.0"      # Reserved CPU cores
+      memory: 1G       # Reserved memory
+```
+
+## Networking
+
+### Host networking
+
+For direct network access without port mapping:
+
+```bash
+docker run -d \
+    --name syft-space \
+    --network host \
+    -v /var/run/docker.sock:/var/run/docker.sock \
+    -v syft-space-data:/data \
+    ghcr.io/openmined/syft-space:latest
+```
+
+### Custom bridge network
+
+Create an isolated network:
+
+```bash
+docker network create syft-network
+
+docker run -d \
+    --name syft-space \
+    --network syft-network \
+    -p 8080:8080 \
+    -v /var/run/docker.sock:/var/run/docker.sock \
+    -v syft-space-data:/data \
+    ghcr.io/openmined/syft-space:latest
+```
+
+## macOS Docker Desktop
+
+For macOS users, the Docker socket location may differ:
+
+```bash
+-v ${HOME}/.docker/run/docker.sock:/var/run/docker.sock
+```
+
+The Docker Compose configuration automatically handles this with the mounted home directory.
+
+## Troubleshooting
+
+### Container won't start
+
+```bash
+# Check container logs
+docker logs syft-space
+
+# Check for port conflicts
+lsof -i :8080
+```
+
+### Docker socket permission denied
+
+```bash
+# Add your user to the docker group
+sudo usermod -aG docker $USER
+
+# Log out and back in for changes to take effect
+```
+
+### Database issues
+
+Reset the database (destroys all data):
+
+```bash
+docker run -d \
+    --name syft-space \
+    -p 8080:8080 \
+    -v /var/run/docker.sock:/var/run/docker.sock \
+    -v syft-space-data:/data \
+    -e SYFT_RESET_DB=true \
+    ghcr.io/openmined/syft-space:latest
+```
+
+## Next steps
+
+- Configure [production networking](/deployment/production#networking)
+- Set up [developer tokens](/deployment/production#developer-tokens)
+- Review [security best practices](/deployment/production#security)

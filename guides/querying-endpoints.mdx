@@ -1,0 +1,817 @@
+---
+title: Querying endpoints
+description: Learn how to programmatically query Syft Space endpoints from your applications
+---
+
+Once you've created and published endpoints, you (or others) can query them programmatically. This guide covers everything you need to know about querying endpoints: authentication, request formats, handling responses, and best practices.
+
+## Understanding endpoint queries
+
+Endpoint queries follow the RAG (Retrieval-Augmented Generation) pattern:
+
+1. **Search phase** - Query searches the dataset for relevant documents
+2. **Context building** - Top matches are collected as context
+3. **Generation phase** - Model generates response using the context
+4. **Response** - Combined results returned to client
+
+Depending on the endpoint's response type, you may receive:
+- **Raw** - Only search results (documents)
+- **Summary** - Only AI-generated response
+- **Both** - Search results and AI response
+
+## Authentication
+
+All endpoint queries require authentication using SyftHub satellite tokens.
+
+### Obtaining a satellite token
+
+Satellite tokens are issued by SyftHub and contain your verified identity:
+
+1. **Register on SyftHub** - Create account at syfthub.openmined.org
+2. **Verify email** - Confirm your email address
+3. **Generate token** - Create API token from your SyftHub dashboard
+4. **Use in requests** - Include token in Authorization header
+
+### Token format
+
+Satellite tokens are JWTs (JSON Web Tokens) containing:
+- **User identity** - Your verified email address
+- **Permissions** - Access grants for specific endpoints
+- **Expiration** - Token validity period
+- **Signature** - Cryptographic verification
+
+### Including the token
+
+Add the token to the Authorization header:
+
+```
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+<Note>
+The token identifies you to the endpoint. Access policies use your email from the token to determine if you can query.
+</Note>
+
+## Query request format
+
+Endpoints accept POST requests with JSON payloads.
+
+### Basic request
+
+**Endpoint:** `POST /api/v1/endpoints/{slug}/query`
+
+**Headers:**
+```
+Content-Type: application/json
+Authorization: Bearer <satellite-token>
+```
+
+**Minimal body:**
+```json
+{
+  "messages": "What is machine learning?"
+}
+```
+
+or
+
+```json
+{
+  "messages": [
+    {"role": "user", "content": "What is machine learning?"}
+  ]
+}
+```
+
+### Full request with parameters
+
+```json
+{
+  "messages": [
+    {"role": "user", "content": "What are transformers in deep learning?"},
+    {"role": "assistant", "content": "Transformers are a neural network architecture..."},
+    {"role": "user", "content": "How do they compare to RNNs?"}
+  ],
+  "similarity_threshold": 0.7,
+  "limit": 5,
+  "include_metadata": true,
+  "max_tokens": 200,
+  "temperature": 0.7,
+  "stop_sequences": ["\n\n", "---"],
+  "stream": false,
+  "presence_penalty": 0.0,
+  "frequency_penalty": 0.0,
+  "transaction_token": "optional-jwt-for-accounting"
+}
+```
+
+### Request parameters
+
+#### Messages (required)
+
+Conversation history as string or array:
+
+**String format:**
+```json
+"messages": "What is machine learning?"
+```
+
+**Array format:**
+```json
+"messages": [
+  {"role": "user", "content": "What is machine learning?"},
+  {"role": "assistant", "content": "Machine learning is..."},
+  {"role": "user", "content": "Can you explain more?"}
+]
+```
+
+**Roles:**
+- `user` - Question from the user
+- `assistant` - Previous response from the model
+- `system` - System-level instructions (optional)
+
+#### Search parameters
+
+Control how documents are retrieved:
+
+**similarity_threshold** (float, 0.0-1.0, default: 0.5)
+- Minimum similarity score for matches
+- Higher = more precise but fewer results
+- Lower = more results but less relevant
+
+**limit** (integer, 1-20, default: 5)
+- Maximum number of documents to retrieve
+- More documents = more context but higher cost
+
+**include_metadata** (boolean, default: true)
+- Whether to include document metadata
+- Set to false to reduce response size
+
+#### Generation parameters
+
+Control how the model generates responses:
+
+**max_tokens** (integer, default: 100)
+- Maximum tokens to generate
+- Typical values: 100-500
+
+**temperature** (float, 0.0-2.0, default: 0.7)
+- Response randomness
+- 0.0 = deterministic, 2.0 = very creative
+
+**stop_sequences** (array of strings, default: ["\n"])
+- Text patterns that stop generation
+- Example: ["\n\n", "END", "---"]
+
+**presence_penalty** (float, -2.0 to 2.0, default: 0.0)
+- Reduce topic repetition
+- Positive = encourage new topics
+
+**frequency_penalty** (float, -2.0 to 2.0, default: 0.0)
+- Reduce word repetition
+- Positive = discourage repeating words
+
+#### Advanced parameters
+
+**stream** (boolean, default: false)
+- Stream response chunks as they're generated
+- Not yet fully implemented
+
+**transaction_token** (string, optional)
+- JWT for accounting on paid endpoints
+- Required if endpoint has accounting policy with `require_transaction_token: true`
+
+**extras** (object, default: {})
+- Additional provider-specific options
+- Passed through to dataset/model types
+
+## Response format
+
+Responses vary based on the endpoint's response type.
+
+### RAG endpoint (both)
+
+Includes both search results and AI response:
+
+```json
+{
+  "summary": {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "model": "gpt-4",
+    "message": {
+      "role": "assistant",
+      "content": "Based on the research papers, transformers are...",
+      "tokens": 87
+    },
+    "finish_reason": "stop",
+    "usage": {
+      "prompt_tokens": 245,
+      "completion_tokens": 87,
+      "total_tokens": 332
+    },
+    "logprobs": null,
+    "cost": 0.0125,
+    "provider_info": {
+      "api_version": "v1",
+      "response_time_ms": 1250
+    }
+  },
+  "references": {
+    "documents": [
+      {
+        "document_id": "doc123_chunk_0",
+        "content": "Transformers are a neural network architecture introduced in 2017...",
+        "metadata": {
+          "file_name": "attention-is-all-you-need.pdf",
+          "page_numbers": "3,4",
+          "author": "Vaswani et al.",
+          "prev_context": "...",
+          "next_context": "..."
+        },
+        "similarity_score": 0.94
+      },
+      {
+        "document_id": "doc456_chunk_12",
+        "content": "Unlike RNNs, transformers process entire sequences in parallel...",
+        "metadata": {
+          "file_name": "bert-paper.pdf",
+          "page_numbers": "2",
+          "author": "Devlin et al."
+        },
+        "similarity_score": 0.88
+      }
+    ],
+    "provider_info": {
+      "response_time_ms": 45
+    },
+    "cost": 0.001
+  }
+}
+```
+
+### Search-only endpoint (raw)
+
+Only includes search results:
+
+```json
+{
+  "references": {
+    "documents": [
+      {
+        "document_id": "doc123_chunk_0",
+        "content": "Transformers are a neural network architecture...",
+        "metadata": {
+          "file_name": "attention-is-all-you-need.pdf",
+          "page_numbers": "3,4"
+        },
+        "similarity_score": 0.94
+      }
+    ],
+    "provider_info": {
+      "response_time_ms": 45
+    },
+    "cost": 0.001
+  }
+}
+```
+
+### AI-only endpoint (summary)
+
+Only includes AI-generated response:
+
+```json
+{
+  "summary": {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "model": "gpt-4",
+    "message": {
+      "role": "assistant",
+      "content": "Transformers are a type of neural network architecture...",
+      "tokens": 67
+    },
+    "finish_reason": "stop",
+    "usage": {
+      "prompt_tokens": 25,
+      "completion_tokens": 67,
+      "total_tokens": 92
+    },
+    "cost": 0.0035,
+    "provider_info": {
+      "api_version": "v1",
+      "response_time_ms": 890
+    }
+  }
+}
+```
+
+### Response fields
+
+#### Summary section
+
+- `id` - Unique identifier for this completion
+- `model` - Model used for generation
+- `message` - Generated message
+  - `role` - Always "assistant"
+  - `content` - Generated text
+  - `tokens` - Token count for this message
+- `finish_reason` - Why generation stopped ("stop", "length", etc.)
+- `usage` - Token usage breakdown
+  - `prompt_tokens` - Input tokens (query + context)
+  - `completion_tokens` - Generated tokens
+  - `total_tokens` - Sum of prompt and completion
+- `logprobs` - Log probabilities (if requested, usually null)
+- `cost` - Estimated cost in USD
+- `provider_info` - Provider-specific metadata
+
+#### References section
+
+- `documents` - Array of matching documents
+  - `document_id` - Unique identifier (chunk ID for local file datasets)
+  - `content` - Document text content
+  - `metadata` - Document metadata
+    - `file_name` - Source file name
+    - `page_numbers` - Comma-separated page numbers
+    - `prev_context` - Text from previous chunk (local file only)
+    - `next_context` - Text from next chunk (local file only)
+    - Custom fields vary by dataset type
+  - `similarity_score` - Match score (0.0-1.0)
+- `provider_info` - Search provider metadata
+- `cost` - Estimated search cost in USD
+
+## Code examples
+
+Complete examples in different languages:
+
+### Python
+
+```python
+import requests
+import os
+
+class SyftSpaceClient:
+    def __init__(self, base_url, satellite_token):
+        self.base_url = base_url.rstrip('/')
+        self.satellite_token = satellite_token
+        self.headers = {
+            'Content-Type': 'application/json',
+            'Authorization': f'Bearer {satellite_token}'
+        }
+    
+    def query(self, slug, messages, **kwargs):
+        """Query an endpoint.
+        
+        Args:
+            slug: Endpoint slug
+            messages: Question string or list of message objects
+            **kwargs: Additional parameters (similarity_threshold, limit, etc.)
+        
+        Returns:
+            Response dictionary with summary and/or references
+        """
+        url = f"{self.base_url}/api/v1/endpoints/{slug}/query"
+        
+        # Build payload
+        payload = {'messages': messages}
+        payload.update(kwargs)
+        
+        # Send request
+        response = requests.post(url, json=payload, headers=self.headers)
+        response.raise_for_status()
+        
+        return response.json()
+    
+    def extract_answer(self, result):
+        """Extract the AI-generated answer from response."""
+        if 'summary' in result:
+            return result['summary']['message']['content']
+        return None
+    
+    def extract_sources(self, result):
+        """Extract source documents from response."""
+        if 'references' in result:
+            return result['references']['documents']
+        return []
+
+# Usage
+client = SyftSpaceClient(
+    base_url='http://localhost:8080',
+    satellite_token=os.getenv('SYFTHUB_TOKEN')
+)
+
+# Simple query
+result = client.query(
+    'research-qa',
+    'What are transformers in deep learning?',
+    similarity_threshold=0.7,
+    limit=3,
+    max_tokens=200
+)
+
+# Extract information
+answer = client.extract_answer(result)
+print(f"Answer: {answer}")
+
+sources = client.extract_sources(result)
+print(f"\nSources ({len(sources)} documents):")
+for doc in sources:
+    print(f"- {doc['metadata'].get('file_name', 'Unknown')} (score: {doc['similarity_score']:.2f})")
+    print(f"  {doc['content'][:100]}...")
+
+# Multi-turn conversation
+conversation = [
+    {"role": "user", "content": "What are transformers?"},
+]
+
+result = client.query('research-qa', conversation, max_tokens=150)
+answer = client.extract_answer(result)
+print(f"\nAssistant: {answer}")
+
+# Continue conversation
+conversation.append({"role": "assistant", "content": answer})
+conversation.append({"role": "user", "content": "How do they compare to RNNs?"})
+
+result = client.query('research-qa', conversation, max_tokens=150)
+answer = client.extract_answer(result)
+print(f"\nAssistant: {answer}")
+```
+
+### JavaScript/TypeScript
+
+```typescript
+interface Message {
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+}
+
+interface QueryOptions {
+  similarityThreshold?: number;
+  limit?: number;
+  includeMetadata?: boolean;
+  maxTokens?: number;
+  temperature?: number;
+  stopSequences?: string[];
+  presencePenalty?: number;
+  frequencyPenalty?: number;
+  transactionToken?: string;
+}
+
+interface QueryResult {
+  summary?: {
+    id: string;
+    model: string;
+    message: {
+      role: string;
+      content: string;
+      tokens: number;
+    };
+    finish_reason: string;
+    usage: {
+      prompt_tokens: number;
+      completion_tokens: number;
+      total_tokens: number;
+    };
+    cost: number;
+    provider_info: Record<string, any>;
+  };
+  references?: {
+    documents: Array<{
+      document_id: string;
+      content: string;
+      metadata: Record<string, any>;
+      similarity_score: number;
+    }>;
+    provider_info: Record<string, any>;
+    cost: number;
+  };
+}
+
+class SyftSpaceClient {
+  private baseUrl: string;
+  private satelliteToken: string;
+
+  constructor(baseUrl: string, satelliteToken: string) {
+    this.baseUrl = baseUrl.replace(/\/$/, '');
+    this.satelliteToken = satelliteToken;
+  }
+
+  async query(
+    slug: string,
+    messages: string | Message[],
+    options: QueryOptions = {}
+  ): Promise<QueryResult> {
+    const url = `${this.baseUrl}/api/v1/endpoints/${slug}/query`;
+
+    const payload = {
+      messages,
+      similarity_threshold: options.similarityThreshold,
+      limit: options.limit,
+      include_metadata: options.includeMetadata,
+      max_tokens: options.maxTokens,
+      temperature: options.temperature,
+      stop_sequences: options.stopSequences,
+      presence_penalty: options.presencePenalty,
+      frequency_penalty: options.frequencyPenalty,
+      transaction_token: options.transactionToken,
+    };
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.satelliteToken}`,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.err || `Query failed: ${response.statusText}`);
+    }
+
+    return response.json();
+  }
+
+  extractAnswer(result: QueryResult): string | null {
+    return result.summary?.message.content || null;
+  }
+
+  extractSources(result: QueryResult) {
+    return result.references?.documents || [];
+  }
+}
+
+// Usage
+const client = new SyftSpaceClient(
+  'http://localhost:8080',
+  process.env.SYFTHUB_TOKEN!
+);
+
+// Simple query
+const result = await client.query(
+  'research-qa',
+  'What are transformers in deep learning?',
+  {
+    similarityThreshold: 0.7,
+    limit: 3,
+    maxTokens: 200,
+  }
+);
+
+console.log('Answer:', client.extractAnswer(result));
+
+const sources = client.extractSources(result);
+console.log(`\nSources (${sources.length} documents):`);
+sources.forEach(doc => {
+  console.log(`- ${doc.metadata.file_name} (score: ${doc.similarity_score.toFixed(2)})`);
+});
+
+// Multi-turn conversation
+const conversation: Message[] = [
+  { role: 'user', content: 'What are transformers?' },
+];
+
+let result2 = await client.query('research-qa', conversation, { maxTokens: 150 });
+const answer = client.extractAnswer(result2)!;
+console.log(`\nAssistant: ${answer}`);
+
+conversation.push({ role: 'assistant', content: answer });
+conversation.push({ role: 'user', content: 'How do they compare to RNNs?' });
+
+result2 = await client.query('research-qa', conversation, { maxTokens: 150 });
+console.log(`\nAssistant: ${client.extractAnswer(result2)}`);
+```
+
+### cURL
+
+```bash
+#!/bin/bash
+
+BASE_URL="http://localhost:8080"
+TOKEN="your-satellite-token-here"
+SLUG="research-qa"
+
+# Simple query
+curl -X POST "${BASE_URL}/api/v1/endpoints/${SLUG}/query" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer ${TOKEN}" \
+  -d '{
+    "messages": "What are transformers in deep learning?",
+    "similarity_threshold": 0.7,
+    "limit": 3,
+    "max_tokens": 200,
+    "temperature": 0.7
+  }' | jq .
+
+# Multi-turn conversation
+curl -X POST "${BASE_URL}/api/v1/endpoints/${SLUG}/query" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer ${TOKEN}" \
+  -d '{
+    "messages": [
+      {"role": "user", "content": "What are transformers?"},
+      {"role": "assistant", "content": "Transformers are..."},
+      {"role": "user", "content": "How do they compare to RNNs?"}
+    ],
+    "max_tokens": 150
+  }' | jq .
+```
+
+## Error handling
+
+Handle common error scenarios:
+
+### Python error handling
+
+```python
+import requests
+from requests.exceptions import HTTPError, ConnectionError, Timeout
+
+def query_with_retry(client, slug, messages, max_retries=3):
+    """Query with automatic retry on transient errors."""
+    for attempt in range(max_retries):
+        try:
+            return client.query(slug, messages)
+        except HTTPError as e:
+            if e.response.status_code == 429:
+                # Rate limited - wait and retry
+                wait_time = 2 ** attempt  # Exponential backoff
+                print(f"Rate limited. Retrying in {wait_time}s...")
+                time.sleep(wait_time)
+                continue
+            elif e.response.status_code == 403:
+                # Permission denied - don't retry
+                print(f"Access denied: {e.response.json().get('err')}")
+                raise
+            elif e.response.status_code == 404:
+                # Endpoint not found - don't retry
+                print(f"Endpoint not found: {slug}")
+                raise
+            elif e.response.status_code >= 500:
+                # Server error - retry
+                print(f"Server error. Retrying in {2**attempt}s...")
+                time.sleep(2 ** attempt)
+                continue
+            else:
+                raise
+        except (ConnectionError, Timeout) as e:
+            # Network error - retry
+            if attempt < max_retries - 1:
+                print(f"Network error. Retrying in {2**attempt}s...")
+                time.sleep(2 ** attempt)
+            else:
+                raise
+    
+    raise Exception(f"Failed after {max_retries} attempts")
+```
+
+### Error status codes
+
+| Code | Meaning | Retry? | Action |
+|------|---------|--------|--------|
+| 400 | Bad Request | No | Fix request parameters |
+| 401 | Unauthorized | No | Check satellite token |
+| 403 | Permission Denied | No | Check access policy |
+| 404 | Not Found | No | Verify endpoint slug |
+| 429 | Rate Limited | Yes | Wait and retry with backoff |
+| 500 | Server Error | Yes | Retry with exponential backoff |
+| 503 | Service Unavailable | Yes | Wait and retry |
+
+## Best practices
+
+### Efficient querying
+
+1. **Cache responses** - Store results for repeated queries
+   ```python
+   from functools import lru_cache
+   
+   @lru_cache(maxsize=100)
+   def cached_query(slug, question):
+       return client.query(slug, question)
+   ```
+
+2. **Batch similar questions** - Group related queries
+   ```python
+   questions = [
+       "What are transformers?",
+       "How do transformers work?",
+       "What are transformer applications?"
+   ]
+   results = [client.query('research-qa', q) for q in questions]
+   ```
+
+3. **Adjust parameters based on needs**
+   - Exploratory queries: Low similarity threshold, high limit
+   - Precise answers: High similarity threshold, low limit
+   - Quick responses: Low max_tokens
+   - Detailed explanations: High max_tokens
+
+### Cost optimization
+
+1. **Limit context size**
+   ```python
+   # Fewer documents = lower cost
+   result = client.query(
+       'research-qa',
+       question,
+       limit=3,  # Instead of default 5
+       similarity_threshold=0.7  # Higher threshold = fewer low-quality matches
+   )
+   ```
+
+2. **Set appropriate max_tokens**
+   ```python
+   # Don't request more than you need
+   result = client.query(
+       'research-qa',
+       question,
+       max_tokens=100  # Short answer
+   )
+   ```
+
+3. **Monitor usage**
+   ```python
+   total_cost = 0
+   if 'summary' in result:
+       total_cost += result['summary']['cost']
+   if 'references' in result:
+       total_cost += result['references']['cost']
+   print(f"Query cost: ${total_cost:.4f}")
+   ```
+
+### Conversation management
+
+1. **Track conversation history**
+   ```python
+   class Conversation:
+       def __init__(self, client, slug):
+           self.client = client
+           self.slug = slug
+           self.messages = []
+       
+       def ask(self, question, **kwargs):
+           self.messages.append({"role": "user", "content": question})
+           result = self.client.query(self.slug, self.messages, **kwargs)
+           answer = self.client.extract_answer(result)
+           self.messages.append({"role": "assistant", "content": answer})
+           return result
+       
+       def reset(self):
+           self.messages = []
+   ```
+
+2. **Limit conversation length**
+   ```python
+   # Keep only last N exchanges
+   MAX_HISTORY = 10
+   if len(conversation) > MAX_HISTORY:
+       conversation = conversation[-MAX_HISTORY:]
+   ```
+
+3. **Add system prompts for context**
+   ```python
+   messages = [
+       {"role": "system", "content": "You are a helpful research assistant. Always cite sources."},
+       {"role": "user", "content": question}
+   ]
+   ```
+
+### Security considerations
+
+1. **Never log or store satellite tokens**
+   ```python
+   # Bad
+   logging.info(f"Using token: {token}")
+   
+   # Good
+   logging.info("Making authenticated request")
+   ```
+
+2. **Use environment variables**
+   ```python
+   import os
+   satellite_token = os.getenv('SYFTHUB_TOKEN')
+   if not satellite_token:
+       raise ValueError("SYFTHUB_TOKEN environment variable required")
+   ```
+
+3. **Validate responses**
+   ```python
+   def validate_response(result):
+       if 'summary' in result:
+           assert 'message' in result['summary']
+           assert 'content' in result['summary']['message']
+       if 'references' in result:
+           assert 'documents' in result['references']
+       return result
+   ```
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="API Reference" icon="book" href="/space/api">
+    Complete API documentation for all endpoints
+  </Card>
+  <Card title="SDK Documentation" icon="code" href="/sdk">
+    Official SDKs for Python, JavaScript, and more
+  </Card>
+</CardGroup>

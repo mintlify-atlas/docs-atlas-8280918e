@@ -1,0 +1,96 @@
+---
+title: Get settings
+description: Retrieve current Syft Space settings including public URL and proxy configuration
+---
+
+## Get public URL
+
+Retrieves the current public URL configured for the Syft Space server.
+
+### Endpoint
+
+```
+GET /api/v1/settings/public-url
+```
+
+### Authentication
+
+Requires authentication via bearer token (admin API key).
+
+### Response
+
+<ResponseField name="public_url" type="string | null">
+  The public URL for the server. Returns `null` if no public URL is configured.
+</ResponseField>
+
+### Example request
+
+```bash
+curl -X GET https://your-server.com/api/v1/settings/public-url \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+### Example response
+
+```json
+{
+  "public_url": "https://my-server.example.com"
+}
+```
+
+---
+
+## Get proxy status
+
+Retrieves the current status of the ngrok proxy tunnel connection.
+
+### Endpoint
+
+```
+GET /api/v1/settings/proxy
+```
+
+### Authentication
+
+Requires authentication via bearer token (admin API key).
+
+### Response
+
+<ResponseField name="connected" type="boolean" required>
+  Whether the proxy tunnel is currently connected.
+</ResponseField>
+
+<ResponseField name="public_url" type="string | null">
+  The public URL of the tunnel if connected, otherwise `null`.
+</ResponseField>
+
+<ResponseField name="has_token" type="boolean" required>
+  Whether an ngrok authentication token is configured.
+</ResponseField>
+
+### Example request
+
+```bash
+curl -X GET https://your-server.com/api/v1/settings/proxy \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+### Example response
+
+```json
+{
+  "connected": true,
+  "public_url": "https://abc123.ngrok.app",
+  "has_token": true
+}
+```
+
+### Example response (disconnected)
+
+```json
+{
+  "connected": false,
+  "public_url": null,
+  "has_token": false
+}
+```

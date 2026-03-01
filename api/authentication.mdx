@@ -1,0 +1,444 @@
+---
+title: Authentication
+description: Authenticating with the Syft Space API
+---
+
+Syft Space uses bearer token authentication for API requests.
+
+## Authentication methods
+
+There are two authentication methods depending on your use case:
+
+<Tabs>
+  <Tab title="Local authentication">
+    Used when accessing your own Syft Space instance directly.
+
+    **How it works:**
+    1. Login with email and password
+    2. Receive JWT bearer token
+    3. Include token in subsequent requests
+
+    **Best for:**
+    - Managing your own Space
+    - Development and testing
+    - Direct API access
+  </Tab>
+  <Tab title="SyftHub authentication">
+    Used when querying published endpoints through the SyftHub marketplace.
+
+    **How it works:**
+    1. Authenticate with SyftHub
+    2. Receive satellite token
+    3. Use token to query any published endpoint
+
+    **Best for:**
+    - Querying endpoints on other Spaces
+    - Marketplace integration
+    - Multi-Space queries
+  </Tab>
+</Tabs>
+
+## Local authentication
+
+### Register account
+
+Create a new account:
+
+```bash
+curl -X POST http://localhost:8080/api/v1/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user@example.com",
+    "password": "secure-password",
+    "tenant_name": "my-space"
+  }'
+```
+
+**Response:**
+
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "email": "user@example.com",
+  "tenant_name": "my-space",
+  "created_at": "2024-01-15T10:30:00Z"
+}
+```
+
+### Login
+
+Get an access token:
+
+```bash
+curl -X POST http://localhost:8080/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user@example.com",
+    "password": "secure-password"
+  }'
+```
+
+**Response:**
+
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "token_type": "bearer",
+  "expires_in": 3600
+}
+```
+
+### Using the token
+
+Include the token in the Authorization header:
+
+```bash
+curl -X GET http://localhost:8080/api/v1/datasets/ \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+```
+
+**Headers:**
+
+```http
+Authorization: Bearer <access_token>
+```
+
+<Note>
+  Tokens expire after 1 hour (3600 seconds). Login again to get a new token.
+</Note>
+
+## SyftHub authentication
+
+### Get satellite token
+
+Authenticate with SyftHub to get a satellite token:
+
+<Steps>
+  <Step title="Visit SyftHub">
+    Go to [syfthub.openmined.org](https://syfthub.openmined.org)
+  </Step>
+  <Step title="Login or register">
+    Create an account or login with existing credentials
+  </Step>
+  <Step title="Generate token">
+    Navigate to **Settings** → **API Tokens** and create a new token
+  </Step>
+  <Step title="Copy token">
+    Copy the satellite token to use in your requests
+  </Step>
+</Steps>
+
+### Query with satellite token
+
+Use the satellite token to query any published endpoint:
+
+```bash
+curl -X POST https://space-url.com/api/v1/endpoints/my-docs/query \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <satellite-token>" \
+  -d '{
+    "messages": [
+      {"role": "user", "content": "What are the main topics?"}
+    ]
+  }'
+```
+
+**How it works:**
+
+1. You send query with satellite token
+2. Space validates token with SyftHub
+3. SyftHub confirms identity and permissions
+4. Space processes query if authorized
+5. Usage is tracked for billing/analytics
+
+## Token format
+
+### Local JWT token
+
+Local tokens are JSON Web Tokens (JWT) with this structure:
+
+```json
+{
+  "header": {
+    "alg": "HS256",
+    "typ": "JWT"
+  },
+  "payload": {
+    "email": "user@example.com",
+    "tenant_name": "my-space",
+    "exp": 1705318200,
+    "iat": 1705314600
+  },
+  "signature": "..."
+}
+```
+
+**Claims:**
+
+- `email` - User's email address
+- `tenant_name` - Tenant context
+- `exp` - Expiration timestamp (Unix)
+- `iat` - Issued at timestamp (Unix)
+
+### Satellite token
+
+Satellite tokens are opaque tokens issued by SyftHub:
+
+```
+sat_live_abc123def456...
+```
+
+Prefix indicates environment:
+
+- `sat_live_` - Production
+- `sat_test_` - Testing/sandbox
+
+## Security best practices
+
+<Accordion title="Store tokens securely">
+  - Never commit tokens to version control
+  - Store in environment variables or secret manager
+  - Use different tokens for different environments
+  - Rotate tokens regularly
+</Accordion>
+
+<Accordion title="Protect tokens in transit">
+  - Always use HTTPS in production
+  - Never send tokens in URLs or query parameters
+  - Use Authorization header, not cookies
+  - Validate SSL certificates
+</Accordion>
+
+<Accordion title="Handle token expiration">
+  ```python
+  def make_request(url, token):
+      response = requests.get(
+          url,
+          headers={"Authorization": f"Bearer {token}"}
+      )
+      
+      if response.status_code == 401:
+          # Token expired, re-authenticate
+          token = login()
+          response = requests.get(
+              url,
+              headers={"Authorization": f"Bearer {token}"}
+          )
+      
+      return response
+  ```
+</Accordion>
+
+<Accordion title="Revoke compromised tokens">
+  If a token is compromised:
+  1. Logout from the application
+  2. Change your password
+  3. Generate new tokens
+  4. Update applications using the old token
+</Accordion>
+
+## Multi-tenancy
+
+For programmatic access to multiple tenants:
+
+```http
+Authorization: Bearer <token>
+X-Tenant-Name: my-other-space
+```
+
+The `X-Tenant-Name` header overrides the tenant in the JWT token. Only works if:
+
+- Token belongs to a user with access to the specified tenant
+- User has appropriate permissions in that tenant
+
+**Example:**
+
+```bash
+curl -X GET http://localhost:8080/api/v1/datasets/ \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..." \
+  -H "X-Tenant-Name: another-space"
+```
+
+## Testing authentication
+
+Verify your token is working:
+
+```bash
+# Get current user info
+curl -X GET http://localhost:8080/api/v1/auth/me \
+  -H "Authorization: Bearer <token>"
+```
+
+**Response:**
+
+```json
+{
+  "email": "user@example.com",
+  "tenant_name": "my-space",
+  "created_at": "2024-01-15T10:30:00Z"
+}
+```
+
+If authentication fails:
+
+```json
+{
+  "detail": "Could not validate credentials"
+}
+```
+
+## Error handling
+
+### 401 Unauthorized
+
+Token is missing, invalid, or expired:
+
+```json
+{
+  "detail": "Not authenticated"
+}
+```
+
+**Solutions:**
+- Include Authorization header
+- Login to get new token
+- Check token format ("Bearer YOUR_TOKEN")
+
+### 403 Forbidden
+
+Token is valid but lacks permissions:
+
+```json
+{
+  "detail": "Insufficient permissions"
+}
+```
+
+**Solutions:**
+- Check tenant access
+- Verify endpoint policies
+- Contact Space owner for access
+
+## Code examples
+
+### Python with token refresh
+
+```python
+import requests
+from datetime import datetime, timedelta
+
+class AuthenticatedClient:
+    def __init__(self, base_url: str, email: str, password: str):
+        self.base_url = base_url
+        self.email = email
+        self.password = password
+        self.token = None
+        self.token_expiry = None
+    
+    def login(self):
+        response = requests.post(
+            f"{self.base_url}/api/v1/auth/login",
+            json={"email": self.email, "password": self.password}
+        )
+        response.raise_for_status()
+        data = response.json()
+        
+        self.token = data["access_token"]
+        self.token_expiry = datetime.now() + timedelta(
+            seconds=data["expires_in"]
+        )
+    
+    def get_headers(self):
+        # Refresh token if expired or expiring soon
+        if not self.token or datetime.now() >= self.token_expiry - timedelta(minutes=5):
+            self.login()
+        
+        return {
+            "Authorization": f"Bearer {self.token}",
+            "Content-Type": "application/json"
+        }
+    
+    def get(self, path: str):
+        response = requests.get(
+            f"{self.base_url}{path}",
+            headers=self.get_headers()
+        )
+        response.raise_for_status()
+        return response.json()
+
+# Usage
+client = AuthenticatedClient(
+    base_url="http://localhost:8080",
+    email="user@example.com",
+    password="secure-password"
+)
+
+datasets = client.get("/api/v1/datasets/")
+```
+
+### JavaScript with automatic retry
+
+```javascript
+class AuthenticatedClient {
+  constructor(baseUrl, email, password) {
+    this.baseUrl = baseUrl
+    this.email = email
+    this.password = password
+    this.token = null
+  }
+
+  async login() {
+    const response = await fetch(`${this.baseUrl}/api/v1/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: this.email,
+        password: this.password
+      })
+    })
+
+    if (!response.ok) throw new Error('Login failed')
+    
+    const data = await response.json()
+    this.token = data.access_token
+  }
+
+  async request(path, options = {}) {
+    if (!this.token) await this.login()
+
+    const response = await fetch(`${this.baseUrl}${path}`, {
+      ...options,
+      headers: {
+        ...options.headers,
+        'Authorization': `Bearer ${this.token}`,
+        'Content-Type': 'application/json'
+      }
+    })
+
+    // Retry once on 401
+    if (response.status === 401) {
+      await this.login()
+      return fetch(`${this.baseUrl}${path}`, {
+        ...options,
+        headers: {
+          ...options.headers,
+          'Authorization': `Bearer ${this.token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+    }
+
+    return response
+  }
+}
+
+// Usage
+const client = new AuthenticatedClient(
+  'http://localhost:8080',
+  'user@example.com',
+  'secure-password'
+)
+
+const response = await client.request('/api/v1/datasets/')
+const datasets = await response.json()
+```

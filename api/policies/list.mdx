@@ -1,0 +1,81 @@
+---
+title: List policies
+description: Retrieve all policies for the current tenant
+---
+
+## List all policies
+
+Retrieve a list of all policies created by the current tenant.
+
+### Endpoint
+
+```
+GET /policies/
+```
+
+### Authentication
+
+Requires tenant authentication via the `X-Tenant-ID` header or similar tenant identification mechanism.
+
+### Query parameters
+
+None.
+
+### Response
+
+Returns an array of policy summary objects.
+
+<ResponseField name="id" type="string">
+  Unique identifier (UUID) of the policy
+</ResponseField>
+
+<ResponseField name="name" type="string">
+  Policy name
+</ResponseField>
+
+<ResponseField name="policy_type" type="string">
+  Policy type name (e.g., `rate_limit`, `accounting`, `access`)
+</ResponseField>
+
+<ResponseField name="endpoint_id" type="string">
+  UUID of the endpoint this policy is attached to
+</ResponseField>
+
+<ResponseField name="created_at" type="string">
+  Creation timestamp in ISO 8601 format
+</ResponseField>
+
+### Example request
+
+```bash
+curl -X GET https://api.syftspace.example/policies/ \
+  -H "X-Tenant-ID: your-tenant-id"
+```
+
+### Example response
+
+```json
+[
+  {
+    "id": "987fcdeb-51a2-43d7-8901-abcdef123456",
+    "name": "Rate limit 100/min",
+    "policy_type": "rate_limit",
+    "endpoint_id": "123e4567-e89b-12d3-a456-426614174000",
+    "created_at": "2026-03-01T10:30:00Z"
+  },
+  {
+    "id": "456789ab-cdef-0123-4567-89abcdef0123",
+    "name": "Access control for enterprise users",
+    "policy_type": "access",
+    "endpoint_id": "123e4567-e89b-12d3-a456-426614174000",
+    "created_at": "2026-02-28T15:45:00Z"
+  },
+  {
+    "id": "fedcba98-7654-3210-fedc-ba9876543210",
+    "name": "Per-call pricing",
+    "policy_type": "accounting",
+    "endpoint_id": "789abcde-f012-3456-789a-bcdef0123456",
+    "created_at": "2026-02-25T08:20:00Z"
+  }
+]
+```

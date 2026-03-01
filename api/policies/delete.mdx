@@ -1,0 +1,57 @@
+---
+title: Delete policy
+description: Delete an existing policy
+---
+
+## Delete a policy
+
+Permanently delete a policy. Once deleted, the policy will no longer be applied to the associated endpoint.
+
+### Endpoint
+
+```
+DELETE /policies/{policy_id}
+```
+
+### Authentication
+
+Requires tenant authentication via the `X-Tenant-ID` header or similar tenant identification mechanism.
+
+### Path parameters
+
+<ParamField path="policy_id" type="string" required>
+  UUID of the policy to delete
+</ParamField>
+
+### Response
+
+Returns a success message upon successful deletion.
+
+<ResponseField name="message" type="string">
+  Success message confirming the deletion
+</ResponseField>
+
+### Example request
+
+```bash
+curl -X DELETE https://api.syftspace.example/policies/987fcdeb-51a2-43d7-8901-abcdef123456 \
+  -H "X-Tenant-ID: your-tenant-id"
+```
+
+### Example response
+
+```json
+{
+  "message": "Policy deleted successfully"
+}
+```
+
+### Error responses
+
+If the policy does not exist or does not belong to the current tenant:
+
+```json
+{
+  "detail": "Policy not found"
+}
+```

@@ -1,0 +1,178 @@
+---
+title: Installation
+description: Install Syft Space using Desktop App, Docker, or from source
+---
+
+Syft Space can be installed using three different methods depending on your needs and technical expertise.
+
+<Note>
+  **System requirements**: 4GB RAM minimum, 8GB recommended
+</Note>
+
+## Desktop app (recommended for beginners)
+
+The desktop app provides one-click setup with system tray integration and auto-updates.
+
+<Tabs>
+  <Tab title="macOS">
+    **Download and install:**
+
+    1. Download the `.dmg` file from [GitHub Releases](https://github.com/OpenMined/syft-space/releases)
+    2. Open the downloaded file and drag Syft Space to your Applications folder
+    3. Launch Syft Space from Applications
+    4. On first launch, you may need to approve the app in **System Settings** → **Privacy & Security**
+
+    **Features:**
+    - System tray integration
+    - Automatic updates
+    - Launch at startup (optional)
+    - One-click start/stop
+  </Tab>
+  <Tab title="Linux">
+    **Choose your package format:**
+
+    <Accordion title=".deb (Debian, Ubuntu)">
+      ```bash
+      # Download the .deb file from Releases
+      sudo dpkg -i syft-space_*.deb
+      sudo apt-get install -f  # Install dependencies
+      ```
+    </Accordion>
+
+    <Accordion title=".rpm (Fedora, RHEL, CentOS)">
+      ```bash
+      # Download the .rpm file from Releases
+      sudo rpm -i syft-space-*.rpm
+      ```
+    </Accordion>
+
+    <Accordion title=".AppImage (Universal)">
+      ```bash
+      # Download the .AppImage file from Releases
+      chmod +x syft-space-*.AppImage
+      ./syft-space-*.AppImage
+      ```
+    </Accordion>
+
+    **Features:**
+    - System tray integration
+    - Automatic updates
+    - Works on all major Linux distributions
+  </Tab>
+</Tabs>
+
+<Info>
+  Learn more about desktop app features in the [Desktop App](/desktop/overview) section.
+</Info>
+
+## Docker (production ready)
+
+Docker deployment is recommended for production environments and servers.
+
+**Quick start:**
+
+```bash
+docker run -d \
+    --name syft-space \
+    --restart unless-stopped \
+    -p 8080:8080 \
+    -v /var/run/docker.sock:/var/run/docker.sock \
+    -v /dev/null:/root/.docker/config.json \
+    -v syft-space-data:/data \
+    ghcr.io/openmined/syft-space:latest
+```
+
+**What this does:**
+
+- Runs Syft Space on port 8080
+- Automatically restarts the container if it stops
+- Mounts Docker socket for database provisioning
+- Persists data in a Docker volume
+
+<Warning>
+  The Docker socket mount (`/var/run/docker.sock`) is required for automatic provisioning of vector databases. Only use this on trusted systems.
+</Warning>
+
+<Info>
+  See the [Docker deployment guide](/deployment/docker) for advanced configuration options.
+</Info>
+
+## From source (development)
+
+Install from source for development or customization.
+
+**Prerequisites:**
+
+- Python 3.12+
+- Node.js 20+
+- Docker (for database provisioning)
+- Git
+
+**Installation:**
+
+```bash
+# Clone the repository
+git clone https://github.com/OpenMined/syft-space.git
+cd syft-space
+
+# Run the setup script
+./run.sh
+```
+
+The `run.sh` script will:
+
+1. Set up Python virtual environment
+2. Install backend dependencies
+3. Install frontend dependencies
+4. Start both backend and frontend servers
+
+**Access the application:**
+
+- **Frontend**: http://localhost:5173 (development)
+- **Backend API**: http://localhost:8080
+- **API docs**: http://localhost:8080/docs
+
+<Info>
+  See the [Source deployment guide](/deployment/source) for detailed development setup.
+</Info>
+
+## First-time setup
+
+After installation, complete the initial setup:
+
+<Steps>
+  <Step title="Access the application">
+    Open http://localhost:8080 in your browser
+  </Step>
+  <Step title="Create your account">
+    Click **Register** and create your account with email and password
+  </Step>
+  <Step title="Configure network settings">
+    <Tabs>
+      <Tab title="Local deployment">
+        Add your developer token (contact OpenMined to obtain one)
+      </Tab>
+      <Tab title="Cloud/VM deployment">
+        Add your server's public IP address
+      </Tab>
+    </Tabs>
+  </Step>
+  <Step title="Start building">
+    You're ready to create your first dataset and endpoint!
+  </Step>
+</Steps>
+
+<Note>
+  Developer tokens are only required for local deployments when publishing endpoints. Cloud deployments use the public IP instead.
+</Note>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Create your first endpoint in 5 minutes
+  </Card>
+  <Card title="Core concepts" icon="book" href="/concepts/overview">
+    Learn how Syft Space works
+  </Card>
+</CardGroup>

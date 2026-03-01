@@ -1,0 +1,397 @@
+---
+title: Connecting models
+description: Learn how to connect AI models to power your Syft Space endpoints with intelligent responses
+---
+
+Models provide the AI capabilities for your endpoints. They generate intelligent responses based on your dataset content, enabling RAG (Retrieval-Augmented Generation) workflows. This guide shows you how to connect and configure AI models.
+
+## Understanding model types
+
+Syft Space currently supports OpenAI and OpenAI-compatible model providers.
+
+### OpenAI
+
+Connect to OpenAI's chat completion API or any OpenAI-compatible endpoint.
+
+**Icon:** 🤖
+
+**Key features:**
+- Full support for OpenAI's chat completion API
+- Compatible with OpenAI alternatives (Anthropic via proxy, local models)
+- Custom base URL for self-hosted models
+- Configurable system prompts
+
+**Configuration:**
+- `api_key` - Your OpenAI API key (required)
+- `model` - Model identifier (e.g., `gpt-4`, `gpt-3.5-turbo`)
+- `base_url` - Custom base URL for OpenAI-compatible APIs (optional)
+- `system_prompt` - Default system prompt for completions (optional)
+
+**Supported models:**
+- GPT-4 and GPT-4 Turbo
+- GPT-3.5 Turbo
+- Any OpenAI-compatible model (Ollama, vLLM, LM Studio)
+
+## Creating a model
+
+<Steps>
+
+### Navigate to models
+
+From your Syft Space dashboard, click **Models** in the sidebar, then click **Add Model**.
+
+### Choose model type
+
+Select **OpenAI** as the model type.
+
+### Configure model settings
+
+**Basic settings:**
+
+1. **Name** - A unique identifier for this model (e.g., "gpt-4-assistant")
+2. **API Key** - Your OpenAI API key (starts with `sk-`)
+3. **Model** - The model identifier to use (default: `gpt-3.5-turbo`)
+4. **Summary** - Brief description of this model's purpose
+5. **Tags** - Comma-separated tags for organization (e.g., "openai,gpt-4,production")
+
+**Advanced settings (optional):**
+
+1. **Base URL** - Custom API endpoint for OpenAI-compatible services
+   - Default: `https://api.openai.com/v1`
+   - Example for local Ollama: `http://localhost:11434/v1`
+   - Example for vLLM: `http://localhost:8000/v1`
+
+2. **System Prompt** - Default instructions for the model
+   ```
+   You are a helpful assistant that answers questions based on the provided context.
+   Always cite your sources and acknowledge when you don't have enough information.
+   ```
+
+### Save configuration
+
+Click **Create Model**. Syft Space validates the connection and verifies the API key works.
+
+</Steps>
+
+## Model configuration examples
+
+### OpenAI GPT-4
+
+```json
+{
+  "name": "gpt-4-assistant",
+  "dtype": "openai",
+  "configuration": {
+    "api_key": "sk-...",
+    "model": "gpt-4",
+    "base_url": "https://api.openai.com/v1",
+    "system_prompt": "You are a helpful research assistant that answers questions based on academic papers. Always cite specific papers when making claims."
+  },
+  "summary": "GPT-4 model for research paper Q&A",
+  "tags": "openai,gpt-4,research"
+}
+```
+
+### GPT-3.5 Turbo (cost-effective)
+
+```json
+{
+  "name": "gpt-3.5-turbo",
+  "dtype": "openai",
+  "configuration": {
+    "api_key": "sk-...",
+    "model": "gpt-3.5-turbo",
+    "base_url": "https://api.openai.com/v1"
+  },
+  "summary": "Fast and cost-effective model for general queries",
+  "tags": "openai,gpt-3.5,cost-effective"
+}
+```
+
+### Local Ollama model
+
+```json
+{
+  "name": "local-llama",
+  "dtype": "openai",
+  "configuration": {
+    "api_key": "not-needed",
+    "model": "llama3:8b",
+    "base_url": "http://localhost:11434/v1",
+    "system_prompt": "You are a helpful assistant running locally."
+  },
+  "summary": "Local Llama 3 8B model via Ollama",
+  "tags": "local,ollama,llama3"
+}
+```
+
+### Self-hosted vLLM
+
+```json
+{
+  "name": "vllm-mistral",
+  "dtype": "openai",
+  "configuration": {
+    "api_key": "token-abc123",
+    "model": "mistralai/Mistral-7B-Instruct-v0.2",
+    "base_url": "http://vllm-server:8000/v1"
+  },
+  "summary": "Self-hosted Mistral 7B via vLLM",
+  "tags": "vllm,mistral,self-hosted"
+}
+```
+
+## Using OpenAI-compatible services
+
+The OpenAI model type works with any service that implements the OpenAI chat completion API.
+
+### Ollama (local models)
+
+Run open-source models locally:
+
+1. Install Ollama from [ollama.ai](https://ollama.ai)
+2. Pull a model: `ollama pull llama3:8b`
+3. Configure model in Syft Space:
+   - **Base URL**: `http://localhost:11434/v1`
+   - **Model**: `llama3:8b`
+   - **API Key**: Use any string (not validated)
+
+### vLLM (high-performance inference)
+
+Deploy models with optimized inference:
+
+1. Start vLLM server with your model
+2. Configure model in Syft Space:
+   - **Base URL**: Your vLLM server URL
+   - **Model**: Full model identifier (e.g., `mistralai/Mistral-7B-Instruct-v0.2`)
+   - **API Key**: Your authentication token if required
+
+### Other OpenAI-compatible providers
+
+Any service implementing the OpenAI API format:
+- Together AI
+- Anyscale Endpoints
+- LM Studio
+- Text Generation WebUI
+
+<Tip>
+When using local or self-hosted models, make sure the service is accessible from your Syft Space instance. Use `http://host.docker.internal` if running in Docker.
+</Tip>
+
+## Understanding model parameters
+
+When querying an endpoint, you can override default model parameters:
+
+### Temperature
+
+Controls randomness in responses (0.0 - 2.0):
+- **0.0** - Deterministic, always picks most likely token
+- **0.7** - Balanced creativity and consistency (default)
+- **1.5+** - More creative and varied responses
+
+### Max tokens
+
+Maximum number of tokens to generate:
+- Default: 100
+- Higher values allow longer responses but increase cost and latency
+
+### Stop sequences
+
+Text patterns that stop generation:
+- Default: `["\n"]`
+- Example: `["\n\n", "END", "---"]`
+
+### Presence penalty
+
+Reduces repetition of topics (-2.0 to 2.0):
+- Positive values encourage discussing new topics
+- Negative values allow repeating topics
+
+### Frequency penalty
+
+Reduces repetition of exact phrases (-2.0 to 2.0):
+- Positive values discourage repeating words
+- Negative values allow more repetition
+
+## Checking model health
+
+Before using a model in an endpoint, verify it's working:
+
+<Steps>
+
+### View model details
+
+Click on your model to view its detail page.
+
+### Test connection
+
+Click **Test Connection** to verify:
+- The API endpoint is accessible
+- Authentication is working
+- The specified model is available
+
+### Review connected endpoints
+
+The model detail page shows all endpoints using this model.
+
+</Steps>
+
+<Warning>
+If your API key is invalid or the model is unavailable, endpoint queries will fail. Always test the connection before publishing endpoints.
+</Warning>
+
+## Managing API keys
+
+### Rotating API keys
+
+To update an API key:
+
+1. Generate a new API key from your provider
+2. Navigate to the model detail page
+3. Click **Edit Configuration**
+4. Update the `api_key` field
+5. Save changes
+6. Test the connection to verify
+
+<Note>
+Updating a model's configuration affects all endpoints using that model. Test thoroughly after making changes.
+</Note>
+
+### Security best practices
+
+1. **Never commit API keys** to version control
+2. **Use separate keys** for development and production
+3. **Rotate keys regularly** (every 90 days recommended)
+4. **Monitor usage** to detect unauthorized access
+5. **Set rate limits** at the provider level when possible
+
+## Model costs and optimization
+
+### Cost management
+
+Syft Space tracks token usage for each query:
+- **Prompt tokens** - Input text including context from datasets
+- **Completion tokens** - Generated response text
+- **Total tokens** - Sum of prompt and completion tokens
+
+View usage statistics on the model detail page and in query responses.
+
+### Optimization tips
+
+1. **Choose appropriate models**
+   - Use GPT-3.5 for simple queries
+   - Reserve GPT-4 for complex reasoning
+
+2. **Limit context size**
+   - Reduce `limit` parameter in searches to fewer documents
+   - Use higher `similarity_threshold` to filter less relevant results
+
+3. **Set max tokens appropriately**
+   - Don't request more tokens than needed
+   - Typical values: 100-500 for most use cases
+
+4. **Cache responses when possible**
+   - Use consistent queries to benefit from provider caching
+   - Consider implementing your own caching layer
+
+5. **Use local models for development**
+   - Test with Ollama locally before deploying
+   - Switch to paid APIs for production
+
+## Updating models
+
+You can update certain model properties after creation:
+
+<Steps>
+
+### Navigate to model
+
+Click on the model you want to update.
+
+### Edit properties
+
+Click **Edit** to modify:
+- **Name** - Change the model identifier
+- **Summary** - Update the description
+- **Tags** - Modify the tag list
+
+<Warning>
+You cannot change the model type or core configuration (like API key or base URL) through the UI. To change these, edit the configuration directly or create a new model.
+</Warning>
+
+### Save changes
+
+Click **Save** to apply your changes.
+
+</Steps>
+
+## Deleting models
+
+Deleting a model removes the configuration from Syft Space:
+
+<Steps>
+
+### Check connected endpoints
+
+Before deleting, verify no endpoints are using this model. The model detail page shows all connected endpoints.
+
+### Delete model
+
+Click **Delete Model** and confirm the action.
+
+</Steps>
+
+<Warning>
+Endpoints using the deleted model will fail to generate responses. Update or delete those endpoints before removing the model.
+</Warning>
+
+## Troubleshooting
+
+### Authentication errors
+
+**Symptom:** "Invalid API key" or 401 errors
+
+**Solutions:**
+- Verify the API key is correct and hasn't expired
+- Check the base URL matches your provider
+- Ensure the API key has appropriate permissions
+
+### Model not found
+
+**Symptom:** "Model not found" or 404 errors
+
+**Solutions:**
+- Verify the model identifier is correct (e.g., `gpt-4`, not `GPT-4`)
+- Check you have access to the specified model
+- For local models, ensure the model is pulled and running
+
+### Connection timeouts
+
+**Symptom:** Requests timeout or hang
+
+**Solutions:**
+- Check network connectivity to the API endpoint
+- Verify firewall rules allow outbound connections
+- For local models, ensure the service is running
+- Increase timeout values if using slow models
+
+### Rate limiting
+
+**Symptom:** "Rate limit exceeded" errors
+
+**Solutions:**
+- Implement rate limiting policies on your endpoints
+- Upgrade your provider plan for higher limits
+- Use caching to reduce duplicate requests
+- Consider using multiple API keys with load balancing
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Build endpoints" icon="plug" href="/guides/building-endpoints">
+    Combine models and datasets into queryable endpoints
+  </Card>
+  <Card title="Set policies" icon="shield" href="/guides/setting-policies">
+    Control access and rate limits for your endpoints
+  </Card>
+</CardGroup>

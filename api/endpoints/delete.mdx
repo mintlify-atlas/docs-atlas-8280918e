@@ -1,0 +1,92 @@
+---
+title: 'Delete endpoint'
+api: 'DELETE /api/v1/endpoints/{slug}'
+---
+
+Permanently delete an endpoint and remove it from all marketplaces.
+
+<Danger>
+  This operation is irreversible. Deleting an endpoint will remove it from all marketplaces and terminate all active queries. Make sure to unpublish the endpoint first if you want to keep it but make it unavailable.
+</Danger>
+
+## Authentication
+
+Requires tenant authentication via SyftBox token.
+
+## Path parameters
+
+<ParamField path="slug" type="string" required>
+  The unique slug of the endpoint to delete.
+</ParamField>
+
+## Response
+
+<ResponseField name="message" type="string" required>
+  Confirmation message indicating successful deletion.
+</ResponseField>
+
+<RequestExample>
+
+```bash cURL
+curl --request DELETE \
+  --url http://localhost:8080/api/v1/endpoints/legal-qa \
+  --header 'Authorization: Bearer YOUR_TOKEN'
+```
+
+```python Python
+import requests
+
+url = "http://localhost:8080/api/v1/endpoints/legal-qa"
+headers = {
+    "Authorization": "Bearer YOUR_TOKEN"
+}
+
+response = requests.delete(url, headers=headers)
+print(response.json())
+```
+
+```javascript JavaScript
+const response = await fetch(
+  'http://localhost:8080/api/v1/endpoints/legal-qa',
+  {
+    method: 'DELETE',
+    headers: {
+      'Authorization': 'Bearer YOUR_TOKEN'
+    }
+  }
+);
+
+const data = await response.json();
+console.log(data);
+```
+
+</RequestExample>
+
+<ResponseExample>
+
+```json 200
+{
+  "message": "Endpoint 'legal-qa' successfully deleted"
+}
+```
+
+```json 404 Not Found
+{
+  "detail": "Endpoint with slug 'legal-qa' not found"
+}
+```
+
+```json 409 Conflict
+{
+  "detail": "Cannot delete endpoint while it is published. Unpublish the endpoint first."
+}
+```
+
+</ResponseExample>
+
+<Warning>
+  Before deleting an endpoint:
+  1. Unpublish it from all marketplaces using the unpublish endpoint
+  2. Ensure no active queries are in progress
+  3. Consider backing up any configuration or policy settings
+</Warning>

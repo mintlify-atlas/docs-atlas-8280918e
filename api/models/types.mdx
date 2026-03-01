@@ -1,0 +1,350 @@
+---
+title: Model types
+description: Available model type providers and their configuration schemas
+---
+
+Model types define the different AI/ML providers supported by Syft Space. Each type has its own configuration requirements and capabilities.
+
+## List model types
+
+Get all available model types with their configuration schemas.
+
+### Response
+
+<ResponseField name="name" type="string">
+  Model type identifier used in the `dtype` field when creating models.
+</ResponseField>
+
+<ResponseField name="description" type="string">
+  Human-readable description of the model type and its capabilities.
+</ResponseField>
+
+<ResponseField name="icon" type="string">
+  Icon representation for the model type.
+</ResponseField>
+
+<ResponseField name="enabled" type="boolean">
+  Whether this model type is currently enabled. Disabled types may lack required dependencies.
+</ResponseField>
+
+<ResponseField name="config_schema" type="object">
+  JSON schema describing the required and optional configuration fields for this model type.
+</ResponseField>
+
+<RequestExample>
+```bash cURL
+curl https://your-server.com/api/v1/models/types \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+```python Python
+import requests
+
+response = requests.get(
+    "https://your-server.com/api/v1/models/types",
+    headers={"Authorization": "Bearer YOUR_API_KEY"}
+)
+
+types = response.json()
+for model_type in types:
+    print(f"{model_type['name']}: {model_type['enabled']}")
+```
+</RequestExample>
+
+<ResponseExample>
+```json 200 OK
+[
+  {
+    "name": "openai",
+    "description": "OpenAI model type for interacting with OpenAI's API.\n\n    Supports OpenAI's chat completion API and compatible endpoints.\n    Can be configured with API key, model selection, and custom base URL.\n\n    Reference: https://platform.openai.com/docs/api-reference",
+    "icon": "🤖",
+    "enabled": true,
+    "config_schema": {
+      "type": "object",
+      "properties": {
+        "api_key": {
+          "type": "string",
+          "title": "OpenAI API Key",
+          "description": "Your OpenAI API key"
+        },
+        "model": {
+          "type": "string",
+          "title": "Model",
+          "description": "Model to use for chat completions",
+          "default": "gpt-3.5-turbo"
+        },
+        "base_url": {
+          "type": "string",
+          "title": "Base URL",
+          "description": "Custom base URL for OpenAI-compatible APIs (optional)",
+          "default": "https://api.openai.com/v1"
+        },
+        "system_prompt": {
+          "type": "string",
+          "title": "System Prompt",
+          "description": "System prompt to use for chat completions",
+          "default": ""
+        }
+      },
+      "required": ["api_key"],
+      "order": ["api_key", "model", "base_url"]
+    }
+  }
+]
+```
+</ResponseExample>
+
+### Endpoint
+
+<CodeGroup>
+```text HTTP Method
+GET
+```
+
+```text Path
+/api/v1/models/types
+```
+
+```text Authentication
+Bearer token required
+```
+</CodeGroup>
+
+## Get model type
+
+Get detailed information about a specific model type.
+
+### Path parameters
+
+<ParamField path="name" type="string" required>
+  Model type identifier (e.g., `openai`, `anthropic`).
+</ParamField>
+
+### Response
+
+Returns a single model type object with the same structure as the list endpoint.
+
+<RequestExample>
+```bash cURL
+curl https://your-server.com/api/v1/models/types/openai \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+```python Python
+import requests
+
+response = requests.get(
+    "https://your-server.com/api/v1/models/types/openai",
+    headers={"Authorization": "Bearer YOUR_API_KEY"}
+)
+
+model_type = response.json()
+print(f"Required fields: {model_type['config_schema']['required']}")
+```
+</RequestExample>
+
+<ResponseExample>
+```json 200 OK
+{
+  "name": "openai",
+  "description": "OpenAI model type for interacting with OpenAI's API.\n\n    Supports OpenAI's chat completion API and compatible endpoints.\n    Can be configured with API key, model selection, and custom base URL.\n\n    Reference: https://platform.openai.com/docs/api-reference",
+  "icon": "🤖",
+  "enabled": true,
+  "config_schema": {
+    "type": "object",
+    "properties": {
+      "api_key": {
+        "type": "string",
+        "title": "OpenAI API Key",
+        "description": "Your OpenAI API key"
+      },
+      "model": {
+        "type": "string",
+        "title": "Model",
+        "description": "Model to use for chat completions",
+        "default": "gpt-3.5-turbo"
+      },
+      "base_url": {
+        "type": "string",
+        "title": "Base URL",
+        "description": "Custom base URL for OpenAI-compatible APIs (optional)",
+        "default": "https://api.openai.com/v1"
+      },
+      "system_prompt": {
+        "type": "string",
+        "title": "System Prompt",
+        "description": "System prompt to use for chat completions",
+        "default": ""
+      }
+    },
+    "required": ["api_key"],
+    "order": ["api_key", "model", "base_url"]
+  }
+}
+```
+
+```json 404 Not Found
+{
+  "detail": "Model type 'invalid-type' not found"
+}
+```
+</ResponseExample>
+
+### Endpoint
+
+<CodeGroup>
+```text HTTP Method
+GET
+```
+
+```text Path
+/api/v1/models/types/{name}
+```
+
+```text Authentication
+Bearer token required
+```
+</CodeGroup>
+
+## Get model type schema
+
+Get only the configuration schema for a specific model type.
+
+### Path parameters
+
+<ParamField path="name" type="string" required>
+  Model type identifier.
+</ParamField>
+
+### Response
+
+Returns the JSON schema object for the model type's configuration.
+
+<RequestExample>
+```bash cURL
+curl https://your-server.com/api/v1/models/types/openai/schema \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+```python Python
+import requests
+
+response = requests.get(
+    "https://your-server.com/api/v1/models/types/openai/schema",
+    headers={"Authorization": "Bearer YOUR_API_KEY"}
+)
+
+schema = response.json()
+print(f"Required: {schema['required']}")
+print(f"Properties: {list(schema['properties'].keys())}")
+```
+</RequestExample>
+
+<ResponseExample>
+```json 200 OK
+{
+  "type": "object",
+  "properties": {
+    "api_key": {
+      "type": "string",
+      "title": "OpenAI API Key",
+      "description": "Your OpenAI API key"
+    },
+    "model": {
+      "type": "string",
+      "title": "Model",
+      "description": "Model to use for chat completions",
+      "default": "gpt-3.5-turbo"
+    },
+    "base_url": {
+      "type": "string",
+      "title": "Base URL",
+      "description": "Custom base URL for OpenAI-compatible APIs (optional)",
+      "default": "https://api.openai.com/v1"
+    },
+    "system_prompt": {
+      "type": "string",
+      "title": "System Prompt",
+      "description": "System prompt to use for chat completions",
+      "default": ""
+    }
+  },
+  "required": ["api_key"],
+  "order": ["api_key", "model", "base_url"]
+}
+```
+</ResponseExample>
+
+### Endpoint
+
+<CodeGroup>
+```text HTTP Method
+GET
+```
+
+```text Path
+/api/v1/models/types/{name}/schema
+```
+
+```text Authentication
+Bearer token required
+```
+</CodeGroup>
+
+## Supported model types
+
+Syft Space supports the following model types:
+
+### OpenAI
+
+**Type identifier:** `openai`
+
+Supports OpenAI's chat completion API and OpenAI-compatible APIs (e.g., Azure OpenAI, LocalAI, LM Studio).
+
+**Configuration:**
+- `api_key` (required): OpenAI API key
+- `model`: Model identifier (default: `gpt-3.5-turbo`)
+- `base_url`: Custom API endpoint (default: `https://api.openai.com/v1`)
+- `system_prompt`: Default system message
+
+**Example models:** `gpt-4`, `gpt-4-turbo`, `gpt-3.5-turbo`
+
+### Anthropic
+
+**Type identifier:** `anthropic`
+
+Supports Anthropic's Claude models via their API.
+
+**Configuration:**
+- `api_key` (required): Anthropic API key
+- `model`: Model identifier (e.g., `claude-3-opus-20240229`)
+- `max_tokens`: Maximum response length
+
+**Example models:** `claude-3-opus`, `claude-3-sonnet`, `claude-3-haiku`
+
+### Ollama
+
+**Type identifier:** `ollama`
+
+Supports locally-hosted Ollama models.
+
+**Configuration:**
+- `base_url` (required): Ollama server URL (e.g., `http://localhost:11434`)
+- `model` (required): Model name installed in Ollama
+
+**Example models:** `llama2`, `mistral`, `codellama`, `phi`
+
+### vLLM
+
+**Type identifier:** `vllm`
+
+Supports vLLM inference server for high-performance model serving.
+
+**Configuration:**
+- `base_url` (required): vLLM server URL
+- `model` (required): Model identifier
+- `api_key`: Optional authentication token
+
+<Note>
+Model type availability depends on installed dependencies. Check the `enabled` field when listing types to see which are currently available in your deployment.
+</Note>

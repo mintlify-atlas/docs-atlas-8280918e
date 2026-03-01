@@ -1,0 +1,73 @@
+---
+title: Delete model
+description: Remove a model from your tenant
+---
+
+Delete a model instance. This operation is permanent and cannot be undone.
+
+<Warning>
+Deleting a model will affect any endpoints that reference it. Ensure endpoints are updated or removed before deleting models in production.
+</Warning>
+
+## Path parameters
+
+<ParamField path="name" type="string" required>
+  The unique name of the model to delete.
+</ParamField>
+
+## Response
+
+<ResponseField name="message" type="string">
+  Confirmation message indicating successful deletion.
+</ResponseField>
+
+<RequestExample>
+```bash cURL
+curl -X DELETE https://your-server.com/api/v1/models/gpt-4-assistant \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+```python Python
+import requests
+
+model_name = "gpt-4-assistant"
+
+response = requests.delete(
+    f"https://your-server.com/api/v1/models/{model_name}",
+    headers={"Authorization": "Bearer YOUR_API_KEY"}
+)
+
+result = response.json()
+print(result["message"])
+```
+</RequestExample>
+
+<ResponseExample>
+```json 200 OK
+{
+  "message": "Successfully deleted model 'gpt-4-assistant'"
+}
+```
+
+```json 404 Not Found
+{
+  "detail": "Model 'non-existent-model' not found"
+}
+```
+</ResponseExample>
+
+## Endpoint
+
+<CodeGroup>
+```text HTTP Method
+DELETE
+```
+
+```text Path
+/api/v1/models/{name}
+```
+
+```text Authentication
+Bearer token required
+```
+</CodeGroup>

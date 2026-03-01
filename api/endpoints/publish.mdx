@@ -1,0 +1,197 @@
+---
+title: 'Publish endpoint'
+api: 'POST /api/v1/endpoints/{slug}/publish'
+---
+
+Publish an endpoint to one or more marketplaces, making it discoverable and accessible to users.
+
+<Info>
+  Publishing an endpoint makes it visible in the marketplace where users can discover and use it. You can publish to specific marketplaces or all active marketplaces at once.
+</Info>
+
+## Authentication
+
+Requires tenant authentication via SyftBox token.
+
+## Path parameters
+
+<ParamField path="slug" type="string" required>
+  The unique slug of the endpoint to publish.
+</ParamField>
+
+## Request body
+
+<ParamField body="marketplace_ids" type="array" default="null">
+  Array of marketplace UUIDs to publish to. Required if `publish_to_all_marketplaces` is false.
+</ParamField>
+
+<ParamField body="publish_to_all_marketplaces" type="boolean" default="false">
+  If true, publishes to all active marketplaces. Takes precedence over `marketplace_ids`.
+</ParamField>
+
+## Response
+
+<ResponseField name="endpoint_slug" type="string" required>
+  The slug of the published endpoint.
+</ResponseField>
+
+<ResponseField name="results" type="array" required>
+  Results for each marketplace publish operation.
+  
+  <Expandable title="result properties">
+    <ResponseField name="marketplace_id" type="string" required>
+      UUID of the marketplace.
+    </ResponseField>
+    
+    <ResponseField name="marketplace_name" type="string" required>
+      Name of the marketplace.
+    </ResponseField>
+    
+    <ResponseField name="success" type="boolean" required>
+      Whether the publish operation succeeded.
+    </ResponseField>
+    
+    <ResponseField name="message" type="string">
+      Success message if the operation completed successfully.
+    </ResponseField>
+    
+    <ResponseField name="error" type="string">
+      Error message if the operation failed.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<RequestExample>
+
+```bash cURL - Specific marketplaces
+curl --request POST \
+  --url http://localhost:8080/api/v1/endpoints/legal-qa/publish \
+  --header 'Authorization: Bearer YOUR_TOKEN' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "marketplace_ids": [
+      "123e4567-e89b-12d3-a456-426614174000",
+      "223e4567-e89b-12d3-a456-426614174001"
+    ],
+    "publish_to_all_marketplaces": false
+  }'
+```
+
+```bash cURL - All marketplaces
+curl --request POST \
+  --url http://localhost:8080/api/v1/endpoints/legal-qa/publish \
+  --header 'Authorization: Bearer YOUR_TOKEN' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "publish_to_all_marketplaces": true
+  }'
+```
+
+```python Python
+import requests
+
+url = "http://localhost:8080/api/v1/endpoints/legal-qa/publish"
+headers = {
+    "Authorization": "Bearer YOUR_TOKEN",
+    "Content-Type": "application/json"
+}
+payload = {
+    "marketplace_ids": [
+        "123e4567-e89b-12d3-a456-426614174000",
+        "223e4567-e89b-12d3-a456-426614174001"
+    ],
+    "publish_to_all_marketplaces": False
+}
+
+response = requests.post(url, json=payload, headers=headers)
+print(response.json())
+```
+
+```javascript JavaScript
+const response = await fetch(
+  'http://localhost:8080/api/v1/endpoints/legal-qa/publish',
+  {
+    method: 'POST',
+    headers: {
+      'Authorization': 'Bearer YOUR_TOKEN',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      marketplace_ids: [
+        '123e4567-e89b-12d3-a456-426614174000',
+        '223e4567-e89b-12d3-a456-426614174001'
+      ],
+      publish_to_all_marketplaces: false
+    })
+  }
+);
+
+const data = await response.json();
+console.log(data);
+```
+
+</RequestExample>
+
+<ResponseExample>
+
+```json 200 Success
+{
+  "endpoint_slug": "legal-qa",
+  "results": [
+    {
+      "marketplace_id": "123e4567-e89b-12d3-a456-426614174000",
+      "marketplace_name": "Legal Services Marketplace",
+      "success": true,
+      "message": "Successfully published endpoint to marketplace",
+      "error": null
+    },
+    {
+      "marketplace_id": "223e4567-e89b-12d3-a456-426614174001",
+      "marketplace_name": "Enterprise Marketplace",
+      "success": true,
+      "message": "Successfully published endpoint to marketplace",
+      "error": null
+    }
+  ]
+}
+```
+
+```json 200 Partial success
+{
+  "endpoint_slug": "legal-qa",
+  "results": [
+    {
+      "marketplace_id": "123e4567-e89b-12d3-a456-426614174000",
+      "marketplace_name": "Legal Services Marketplace",
+      "success": true,
+      "message": "Successfully published endpoint to marketplace",
+      "error": null
+    },
+    {
+      "marketplace_id": "223e4567-e89b-12d3-a456-426614174001",
+      "marketplace_name": "Enterprise Marketplace",
+      "success": false,
+      "message": null,
+      "error": "Marketplace API unavailable"
+    }
+  ]
+}
+```
+
+```json 404 Not Found
+{
+  "detail": "Endpoint with slug 'legal-qa' not found"
+}
+```
+
+```json 400 Bad Request
+{
+  "detail": "No marketplace configured"
+}
+```
+
+</ResponseExample>
+
+<Tip>
+  Use `publish_to_all_marketplaces: true` when you want to make your endpoint available across all marketplaces without specifying each one individually.
+</Tip>

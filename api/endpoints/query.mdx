@@ -1,0 +1,338 @@
+---
+title: 'Query endpoint'
+api: 'POST /api/v1/endpoints/{slug}/query'
+---
+
+Query an endpoint to get responses from your RAG system. This is the core endpoint that orchestrates dataset search, model chat, and policy enforcement.
+
+<Info>
+  This is a public endpoint that requires a SyftHub satellite token for authentication. The user's identity is automatically extracted from the token.
+</Info>
+
+## Authentication
+
+Requires a valid SyftHub satellite token in the Authorization header. The user's email is automatically extracted and verified from this token.
+
+## Path parameters
+
+<ParamField path="slug" type="string" required>
+  The unique slug of the endpoint to query.
+</ParamField>
+
+## Request body
+
+<ParamField body="messages" type="string | array" required>
+  Either a simple string query or an array of chat messages. For chat format, each message should have `role` (user/assistant/system) and `content` fields.
+</ParamField>
+
+<ParamField body="similarity_threshold" type="number" default="0.5">
+  Minimum similarity score (0.0-1.0) for dataset search results. Higher values return only more relevant documents.
+</ParamField>
+
+<ParamField body="limit" type="number" default="5">
+  Maximum number of documents to return from dataset search.
+</ParamField>
+
+<ParamField body="include_metadata" type="boolean" default="true">
+  Whether to include document metadata in the response.
+</ParamField>
+
+<ParamField body="max_tokens" type="number" default="100">
+  Maximum number of tokens to generate in the model response.
+</ParamField>
+
+<ParamField body="temperature" type="number" default="0.7">
+  Sampling temperature for model generation (0.0-2.0). Higher values make output more random.
+</ParamField>
+
+<ParamField body="stop_sequences" type="array" default='["\n"]'>
+  Array of strings that will stop generation when encountered.
+</ParamField>
+
+<ParamField body="stream" type="boolean" default="false">
+  Whether to stream the response (for real-time generation).
+</ParamField>
+
+<ParamField body="presence_penalty" type="number" default="0.0">
+  Penalty for tokens based on whether they appear in the text (-2.0 to 2.0).
+</ParamField>
+
+<ParamField body="frequency_penalty" type="number" default="0.0">
+  Penalty for tokens based on their frequency in the text (-2.0 to 2.0).
+</ParamField>
+
+<ParamField body="extras" type="object" default="{}">
+  Additional configuration options for advanced use cases. Can include `reference_options` and `summarize_options`.
+</ParamField>
+
+<ParamField body="transaction_token" type="string" default="null">
+  Optional transaction token for accounting and billing purposes.
+</ParamField>
+
+## Response
+
+<ResponseField name="summary" type="object">
+  Generated response from the model (only present if model is configured).
+  
+  <Expandable title="summary properties">
+    <ResponseField name="id" type="string" required>
+      Unique identifier for the response.
+    </ResponseField>
+    
+    <ResponseField name="model" type="string" required>
+      Name of the model used for generation.
+    </ResponseField>
+    
+    <ResponseField name="message" type="object" required>
+      The generated message.
+      
+      <Expandable title="message properties">
+        <ResponseField name="role" type="string" required>
+          Role of the message sender (typically "assistant").
+        </ResponseField>
+        
+        <ResponseField name="content" type="string" required>
+          The generated text content.
+        </ResponseField>
+        
+        <ResponseField name="tokens" type="number" required>
+          Number of tokens in the message.
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+    
+    <ResponseField name="finish_reason" type="string" required>
+      Reason for completion (e.g., "stop", "length").
+    </ResponseField>
+    
+    <ResponseField name="usage" type="object" required>
+      Token usage information.
+      
+      <Expandable title="usage properties">
+        <ResponseField name="prompt_tokens" type="number" required>
+          Number of tokens in the prompt.
+        </ResponseField>
+        
+        <ResponseField name="completion_tokens" type="number" required>
+          Number of tokens in the completion.
+        </ResponseField>
+        
+        <ResponseField name="total_tokens" type="number" required>
+          Total number of tokens used.
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+    
+    <ResponseField name="cost" type="number" required>
+      Cost of the generation in USD.
+    </ResponseField>
+    
+    <ResponseField name="provider_info" type="object" required>
+      Provider-specific metadata.
+      
+      <Expandable title="provider_info properties">
+        <ResponseField name="api_version" type="string">
+          API version used by the provider.
+        </ResponseField>
+        
+        <ResponseField name="response_time_ms" type="number">
+          Response time in milliseconds.
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+    
+    <ResponseField name="logprobs" type="object">
+      Log probabilities for tokens (if requested).
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="references" type="object">
+  Reference documents from dataset search (only present if dataset is configured).
+  
+  <Expandable title="references properties">
+    <ResponseField name="documents" type="array" required>
+      Array of matching documents.
+      
+      <Expandable title="document properties">
+        <ResponseField name="document_id" type="string" required>
+          Unique identifier for the document.
+        </ResponseField>
+        
+        <ResponseField name="content" type="string" required>
+          The document content/text.
+        </ResponseField>
+        
+        <ResponseField name="metadata" type="object" required>
+          Document metadata (e.g., source, author, date).
+        </ResponseField>
+        
+        <ResponseField name="similarity_score" type="number" required>
+          Similarity score between query and document (0.0-1.0).
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+    
+    <ResponseField name="provider_info" type="object" required>
+      Search provider information.
+      
+      <Expandable title="provider_info properties">
+        <ResponseField name="search_engine" type="string">
+          Name of the search engine used (e.g., "weaviate").
+        </ResponseField>
+        
+        <ResponseField name="response_time_ms" type="number">
+          Search response time in milliseconds.
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+    
+    <ResponseField name="cost" type="number" required>
+      Cost of the search operation in USD.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<RequestExample>
+
+```bash cURL
+curl --request POST \
+  --url http://localhost:8080/api/v1/endpoints/legal-qa/query \
+  --header 'Authorization: Bearer SYFT_HUB_TOKEN' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "messages": [
+      {
+        "role": "user",
+        "content": "What is the capital of France?"
+      }
+    ],
+    "similarity_threshold": 0.5,
+    "limit": 5,
+    "max_tokens": 100,
+    "temperature": 0.7
+  }'
+```
+
+```python Python
+import requests
+
+url = "http://localhost:8080/api/v1/endpoints/legal-qa/query"
+headers = {
+    "Authorization": "Bearer SYFT_HUB_TOKEN",
+    "Content-Type": "application/json"
+}
+payload = {
+    "messages": [
+        {
+            "role": "user",
+            "content": "What is the capital of France?"
+        }
+    ],
+    "similarity_threshold": 0.5,
+    "limit": 5,
+    "max_tokens": 100,
+    "temperature": 0.7
+}
+
+response = requests.post(url, json=payload, headers=headers)
+print(response.json())
+```
+
+```javascript JavaScript
+const response = await fetch(
+  'http://localhost:8080/api/v1/endpoints/legal-qa/query',
+  {
+    method: 'POST',
+    headers: {
+      'Authorization': 'Bearer SYFT_HUB_TOKEN',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      messages: [
+        {
+          role: 'user',
+          content: 'What is the capital of France?'
+        }
+      ],
+      similarity_threshold: 0.5,
+      limit: 5,
+      max_tokens: 100,
+      temperature: 0.7
+    })
+  }
+);
+
+const data = await response.json();
+console.log(data);
+```
+
+</RequestExample>
+
+<ResponseExample>
+
+```json 200 Both summary and references
+{
+  "summary": {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "model": "gpt-4",
+    "message": {
+      "role": "assistant",
+      "content": "The capital of France is Paris.",
+      "tokens": 8
+    },
+    "finish_reason": "stop",
+    "usage": {
+      "prompt_tokens": 10,
+      "completion_tokens": 8,
+      "total_tokens": 18
+    },
+    "cost": 0.0025,
+    "provider_info": {
+      "api_version": "v1",
+      "response_time_ms": 150
+    }
+  },
+  "references": {
+    "documents": [
+      {
+        "document_id": "doc1",
+        "content": "Paris is the capital of France.",
+        "metadata": {
+          "source": "wikipedia"
+        },
+        "similarity_score": 0.95
+      }
+    ],
+    "provider_info": {
+      "search_engine": "weaviate",
+      "response_time_ms": 50
+    },
+    "cost": 0.001
+  }
+}
+```
+
+```json 404 Not Found
+{
+  "detail": "Endpoint not found"
+}
+```
+
+```json 401 Unauthorized
+{
+  "detail": "Invalid or missing SyftHub token"
+}
+```
+
+```json 403 Forbidden
+{
+  "detail": "Permission denied by endpoint policy"
+}
+```
+
+</ResponseExample>
+
+<Warning>
+  This endpoint enforces all policies attached to it. Queries may be rejected based on rate limits, access controls, or other policy rules.
+</Warning>

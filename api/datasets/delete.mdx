@@ -1,0 +1,79 @@
+---
+title: Delete dataset
+description: Delete a dataset and stop its provisioner if no other datasets use it
+---
+
+Delete a dataset by name. If the dataset uses a shared provisioner and no other datasets depend on it, the provisioner will also be stopped and removed.
+
+<Warning>
+This operation cannot be undone. All dataset configuration and metadata will be permanently deleted.
+</Warning>
+
+## Request
+
+<ParamField path="DELETE" type="string">
+  `/datasets/{name}`
+</ParamField>
+
+### Path parameters
+
+<ParamField path="name" type="string" required>
+  The name of the dataset to delete
+</ParamField>
+
+### Authentication
+
+Requires authentication via tenant credentials.
+
+## Response
+
+<ResponseField name="message" type="string">
+  Success message confirming deletion
+</ResponseField>
+
+<RequestExample>
+```bash cURL
+curl -X DELETE https://your-domain.com/datasets/legal-docs \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+</RequestExample>
+
+<ResponseExample>
+```json 200 OK
+{
+  "message": "Dataset 'legal-docs' deleted successfully"
+}
+```
+
+```json 404 Not Found
+{
+  "detail": "Dataset 'legal-docs' not found"
+}
+```
+
+```json 401 Unauthorized
+{
+  "detail": "Not authenticated"
+}
+```
+</ResponseExample>
+
+## Behavior notes
+
+### Provisioner cleanup
+
+For local dataset types (e.g., `local_file`):
+- If this is the last dataset using the provisioner, the provisioner will be stopped and its state removed
+- If other datasets still use the provisioner, only the dataset record is deleted
+
+### Connected endpoints
+
+Datasets can be connected to endpoints. When a dataset is deleted:
+- All endpoint connections are automatically removed (cascade delete)
+- Endpoints themselves are not deleted, only their connections to this dataset
+
+### Data persistence
+
+Deleting a dataset removes the configuration from Syft Space but may not delete the underlying data:
+- **local_file**: ChromaDB data persists in the container/filesystem
+- **remote_weaviate**: Remote Weaviate collections are not modified

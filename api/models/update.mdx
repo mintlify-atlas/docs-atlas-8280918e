@@ -1,0 +1,186 @@
+---
+title: Update model
+description: Update model metadata (partial update)
+---
+
+Update a model's name, summary, or tags. This is a partial update operation - you only need to include the fields you want to change. Configuration cannot be updated after creation.
+
+<Note>
+Model configuration is immutable after creation. To change configuration, delete the model and create a new one.
+</Note>
+
+## Path parameters
+
+<ParamField path="name" type="string" required>
+  The current name of the model to update.
+</ParamField>
+
+## Request
+
+At least one field must be provided.
+
+<ParamField body="name" type="string">
+  New unique name for the model. Must not conflict with existing models in your tenant.
+</ParamField>
+
+<ParamField body="summary" type="string">
+  Updated description of the model.
+</ParamField>
+
+<ParamField body="tags" type="string">
+  Updated comma-separated tags.
+  
+  Example: `openai,gpt-4,production`
+</ParamField>
+
+## Response
+
+<ResponseField name="id" type="uuid">
+  Unique identifier (unchanged).
+</ResponseField>
+
+<ResponseField name="name" type="string">
+  Updated model name.
+</ResponseField>
+
+<ResponseField name="dtype" type="string">
+  Model type (unchanged).
+</ResponseField>
+
+<ResponseField name="configuration" type="object">
+  Model configuration (unchanged).
+</ResponseField>
+
+<ResponseField name="summary" type="string">
+  Updated summary.
+</ResponseField>
+
+<ResponseField name="tags" type="string">
+  Updated tags.
+</ResponseField>
+
+<ResponseField name="created_at" type="datetime">
+  Original creation timestamp.
+</ResponseField>
+
+<ResponseField name="updated_at" type="datetime">
+  Updated timestamp reflecting this change.
+</ResponseField>
+
+<ResponseField name="connected_endpoints" type="array">
+  Array of connected endpoints.
+  
+  <Expandable title="Endpoint properties">
+    <ResponseField name="connected_endpoints[].id" type="uuid">
+      Endpoint unique identifier.
+    </ResponseField>
+    
+    <ResponseField name="connected_endpoints[].name" type="string">
+      Endpoint name.
+    </ResponseField>
+    
+    <ResponseField name="connected_endpoints[].slug" type="string">
+      Endpoint slug.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<RequestExample>
+```bash cURL
+curl -X PATCH https://your-server.com/api/v1/models/gpt-4-assistant \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "summary": "GPT-4 model optimized for customer support",
+    "tags": "openai,gpt-4,support,production"
+  }'
+```
+
+```python Python
+import requests
+
+model_name = "gpt-4-assistant"
+
+response = requests.patch(
+    f"https://your-server.com/api/v1/models/{model_name}",
+    headers={
+        "Authorization": "Bearer YOUR_API_KEY",
+        "Content-Type": "application/json"
+    },
+    json={
+        "summary": "GPT-4 model optimized for customer support",
+        "tags": "openai,gpt-4,support,production"
+    }
+)
+
+model = response.json()
+print(f"Updated: {model['name']}")
+```
+</RequestExample>
+
+<ResponseExample>
+```json 200 OK
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "name": "gpt-4-assistant",
+  "dtype": "openai",
+  "configuration": {
+    "api_key": "sk-...",
+    "model": "gpt-4",
+    "base_url": "https://api.openai.com/v1",
+    "system_prompt": "You are a helpful AI assistant."
+  },
+  "summary": "GPT-4 model optimized for customer support",
+  "tags": "openai,gpt-4,support,production",
+  "created_at": "2024-03-15T10:30:00Z",
+  "updated_at": "2024-03-15T15:45:00Z",
+  "connected_endpoints": [
+    {
+      "id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+      "name": "Support Assistant",
+      "slug": "support-assistant"
+    }
+  ]
+}
+```
+
+```json 404 Not Found
+{
+  "detail": "Model 'non-existent-model' not found"
+}
+```
+
+```json 409 Conflict
+{
+  "detail": "Model 'new-name' already exists"
+}
+```
+
+```json 422 Unprocessable Entity
+{
+  "detail": [
+    {
+      "type": "value_error",
+      "loc": ["body"],
+      "msg": "At least one field (name, summary, or tags) must be provided"
+    }
+  ]
+}
+```
+</ResponseExample>
+
+## Endpoint
+
+<CodeGroup>
+```text HTTP Method
+PATCH
+```
+
+```text Path
+/api/v1/models/{name}
+```
+
+```text Authentication
+Bearer token required
+```
+</CodeGroup>

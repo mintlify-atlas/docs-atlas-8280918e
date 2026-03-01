@@ -1,0 +1,360 @@
+---
+title: Policy types
+description: Available policy types and their configuration schemas
+---
+
+## Policy types
+
+Syft Space supports three types of policies that can be applied to endpoints. Each policy type has its own configuration schema and behavior.
+
+## Rate limit policy
+
+**Policy type:** `rate_limit`
+
+**Icon:** ⏱️
+
+**Description:** Limit the number of requests that can be made within a time window. Supports per-user rate limiting and selective application to specific users.
+
+### Configuration
+
+<ParamField path="limit" type="string" required>
+  Rate limit in format `N/unit` where unit is `s` (seconds), `m` (minutes), or `h` (hours).
+  
+  Examples: `50/m`, `1000/h`, `100/s`
+</ParamField>
+
+<ParamField path="scope" type="string" default="per_user">
+  Scope of the rate limit:
+  - `per_user`: Each user has their own rate limit counter
+  - `global`: All users share the same rate limit counter for the endpoint
+</ParamField>
+
+<ParamField path="applied_to" type="array" default="['*']">
+  List of user email patterns to apply this rate limit to. Supports glob patterns.
+  
+  Examples:
+  - `["*"]`: Apply to all users
+  - `["*@company.com"]`: Apply to all users from company.com
+  - `["admin@example.com", "user@example.com"]`: Apply to specific users
+</ParamField>
+
+### Behavior
+
+- **Aggregation logic:** AND - All rate limit policies must pass
+- **Ordering:** Policies are sorted by most restrictive first (fail fast)
+- **Stateless:** Rate limit history is managed by the limiter module
+
+### Example configuration
+
+```json
+{
+  "limit": "100/m",
+  "scope": "per_user",
+  "applied_to": ["*"]
+}
+```
+
+## Access control policy
+
+**Policy type:** `access`
+
+**Icon:** 🔐
+
+**Description:** Control access to endpoints using whitelist and blacklist rules. Denied users are always blocked, even if in the allowed list.
+
+### Configuration
+
+<ParamField path="allowed_users" type="array" default="[]">
+  List of glob patterns for allowed users. Empty array means everyone is allowed (except denied users).
+  
+  Examples:
+  - `["*@company.com"]`: Allow all users from company.com
+  - `["admin-*@*"]`: Allow all users with admin- prefix
+  - `["*"]`: Allow everyone
+</ParamField>
+
+<ParamField path="denied_users" type="array" default="[]">
+  List of glob patterns for denied users. Takes priority over `allowed_users`.
+  
+  Examples:
+  - `["banned@example.com"]`: Deny specific user
+  - `["*@competitor.com"]`: Deny all users from competitor.com
+</ParamField>
+
+### Access control logic
+
+1. If user matches `denied_users` pattern → DENY (blacklist takes priority)
+2. If `allowed_users` is empty → ALLOW (open to everyone except denied)
+3. If user matches `allowed_users` pattern → ALLOW
+4. Otherwise → DENY
+
+When a user matches both allowed and denied patterns, the more specific pattern wins. If equal specificity, deny wins (security tiebreaker).
+
+### Behavior
+
+- **Aggregation logic:** OR - If any access policy allows, access is granted
+- **Ordering:** Policies are sorted by specificity (most specific patterns first)
+- **Stateless:** No state is maintained
+
+### Example configurations
+
+Allow only company users:
+
+```json
+{
+  "allowed_users": ["*@company.com"],
+  "denied_users": []
+}
+```
+
+Allow everyone except banned users:
+
+```json
+{
+  "allowed_users": [],
+  "denied_users": ["banned@example.com", "*@competitor.com"]
+}
+```
+
+## Accounting policy
+
+**Policy type:** `accounting`
+
+**Icon:** 💰
+
+**Description:** Track and bill API usage based on calls or tokens. Integrates with external accounting service for transaction management.
+
+### Configuration
+
+<ParamField path="price" type="number" required>
+  Price per unit. Must be greater than or equal to 0.
+</ParamField>
+
+<ParamField path="pricing_mode" type="string" default="per_call">
+  Pricing mode:
+  - `per_call`: Fixed price per API call (currently the only supported mode)
+</ParamField>
+
+<ParamField path="applied_to" type="array" default="['*']">
+  List of user email patterns to apply this accounting policy to. Supports glob patterns.
+  
+  Examples:
+  - `["*"]`: Apply to all users
+  - `["*@company.com"]`: Apply to all users from company.com
+</ParamField>
+
+### Behavior
+
+- **Aggregation logic:** AND - All accounting policies must succeed
+- **Stateless:** Accounting records are managed by external accounting SDK
+- **Transaction flow:**
+  1. Pre-hook: Create delegated transaction before endpoint execution
+  2. Endpoint executes
+  3. Post-hook: Confirm transaction after successful execution
+- **Requirements:** Requires accounting credentials in context metadata (injected from marketplace configuration)
+- **Transaction token:** Requests must include a `transaction_token` field when accounting policies are active
+
+### Example configuration
+
+```json
+{
+  "price": 0.01,
+  "pricing_mode": "per_call",
+  "applied_to": ["*"]
+}
+```
+
+### Making requests with accounting
+
+When an endpoint has accounting policies, requests must include a transaction token:
+
+```bash
+curl -X POST https://api.syftspace.example/endpoint/chat \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "Hello",
+    "transaction_token": "your-transaction-token"
+  }'
+```
+
+The response will include cost information:
+
+```json
+{
+  "summary": {
+    "response": "Hello! How can I help you?",
+    "cost": 0.01
+  }
+}
+```
+
+## Get policy types
+
+### List all policy types
+
+Retrieve information about all available policy types.
+
+**Endpoint:**
+
+```
+GET /policies/types/
+```
+
+**Example request:**
+
+```bash
+curl -X GET https://api.syftspace.example/policies/types/
+```
+
+**Example response:**
+
+```json
+[
+  {
+    "name": "rate_limit",
+    "description": "Limit the number of requests that can be made within a time window. Supports per-user rate limiting and selective application to specific users.",
+    "config_schema": {
+      "type": "object",
+      "properties": {
+        "limit": {
+          "type": "string",
+          "description": "Rate limit in format 'N/unit' where unit is s(econds), m(inutes), or h(ours)"
+        },
+        "scope": {
+          "type": "string",
+          "enum": ["per_user", "global"],
+          "default": "per_user"
+        },
+        "applied_to": {
+          "type": "array",
+          "items": {"type": "string"},
+          "default": ["*"]
+        }
+      },
+      "required": ["limit"]
+    },
+    "icon": "⏱️",
+    "enabled": true
+  },
+  {
+    "name": "access",
+    "description": "Control access to endpoints using whitelist and blacklist rules. Denied users are always blocked, even if in the allowed list.",
+    "config_schema": {
+      "type": "object",
+      "properties": {
+        "allowed_users": {
+          "type": "array",
+          "items": {"type": "string"},
+          "default": []
+        },
+        "denied_users": {
+          "type": "array",
+          "items": {"type": "string"},
+          "default": []
+        }
+      }
+    },
+    "icon": "🔐",
+    "enabled": true
+  },
+  {
+    "name": "accounting",
+    "description": "Track and bill API usage based on calls or tokens",
+    "config_schema": {
+      "type": "object",
+      "properties": {
+        "price": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Price per unit"
+        },
+        "pricing_mode": {
+          "type": "string",
+          "enum": ["per_call"],
+          "default": "per_call"
+        },
+        "applied_to": {
+          "type": "array",
+          "items": {"type": "string"},
+          "default": ["*"]
+        }
+      },
+      "required": ["price"]
+    },
+    "icon": "💰",
+    "enabled": true
+  }
+]
+```
+
+### Get specific policy type
+
+Retrieve information about a specific policy type.
+
+**Endpoint:**
+
+```
+GET /policies/types/{name}
+```
+
+**Path parameters:**
+
+<ParamField path="name" type="string" required>
+  Name of the policy type (e.g., `rate_limit`, `access`, `accounting`)
+</ParamField>
+
+**Example request:**
+
+```bash
+curl -X GET https://api.syftspace.example/policies/types/rate_limit
+```
+
+### Get policy type schema
+
+Retrieve only the configuration schema for a specific policy type.
+
+**Endpoint:**
+
+```
+GET /policies/types/{name}/schema
+```
+
+**Path parameters:**
+
+<ParamField path="name" type="string" required>
+  Name of the policy type (e.g., `rate_limit`, `access`, `accounting`)
+</ParamField>
+
+**Example request:**
+
+```bash
+curl -X GET https://api.syftspace.example/policies/types/rate_limit/schema
+```
+
+**Example response:**
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "limit": {
+      "type": "string",
+      "description": "Rate limit in format 'N/unit' where unit is s(econds), m(inutes), or h(ours)",
+      "examples": ["50/m", "1000/h", "100/s"]
+    },
+    "scope": {
+      "type": "string",
+      "enum": ["per_user", "global"],
+      "default": "per_user",
+      "description": "Scope: per_user (each user has own limit) or global (shared across all users)"
+    },
+    "applied_to": {
+      "type": "array",
+      "items": {"type": "string"},
+      "default": ["*"],
+      "description": "List of user emails or '*' for all users"
+    }
+  },
+  "required": ["limit"]
+}
+```

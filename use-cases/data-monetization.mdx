@@ -1,0 +1,647 @@
+---
+title: Data monetization
+description: Share valuable insights from your data without exposing the underlying information
+icon: coins
+---
+
+Data owners can use Syft Space to monetize their datasets by providing queryable access to insights without exposing the underlying raw data. This enables new revenue streams while preserving privacy and control.
+
+## Why Syft Space for data monetization
+
+<CardGroup cols={2}>
+  <Card title="Privacy-preserving" icon="shield-halved">
+    Share insights, not raw data. Users get answers without seeing your underlying information.
+  </Card>
+  <Card title="Flexible pricing" icon="hand-holding-dollar">
+    Set your own pricing models: per query, subscription, or custom arrangements.
+  </Card>
+  <Card title="Usage tracking" icon="chart-line">
+    Built-in accounting tracks every query, token usage, and costs automatically.
+  </Card>
+  <Card title="Decentralized marketplace" icon="store">
+    Publish to SyftHub to reach buyers in a decentralized knowledge marketplace.
+  </Card>
+</CardGroup>
+
+## Value proposition
+
+Traditional data monetization requires exposing your data:
+
+- **Data marketplaces**: Sell raw datasets or database access
+- **APIs**: Provide direct access to records
+- **Downloads**: Give away files with no control after sale
+
+**Syft Space enables a new model:**
+
+- Users query your data through natural language or structured prompts
+- They receive insights, summaries, and answers
+- Your raw data never leaves your control
+- You track usage and charge accordingly
+
+## Use cases
+
+### Healthcare data
+
+Medical institutions can monetize de-identified patient data for research.
+
+**What to monetize:**
+- Clinical trial results
+- Treatment outcomes
+- Medical imaging descriptions
+- Diagnostic patterns
+- Drug interaction data
+
+**Example queries:**
+- "What are common side effects of Drug X in patients over 65?"
+- "What treatment protocols showed best outcomes for Condition Y?"
+- "How does Therapy Z compare to standard care?"
+
+**Benefits:**
+- Accelerate medical research
+- Maintain HIPAA compliance
+- Generate revenue from existing data
+- No risk of patient re-identification
+
+**Pricing model:** $0.50 per query, or $500/month for unlimited research access
+
+### Financial data
+
+Financial institutions can offer insights without exposing transaction details.
+
+**What to monetize:**
+- Market trends and patterns
+- Consumer spending behavior
+- Credit risk indicators
+- Investment performance
+- Economic indicators
+
+**Example queries:**
+- "What sectors showed increased consumer spending in Q4?"
+- "How do spending patterns differ between demographics?"
+- "What indicators correlate with loan default?"
+
+**Benefits:**
+- New revenue from proprietary data
+- Maintain competitive advantage
+- Comply with data privacy regulations
+- Serve researchers and analysts
+
+**Pricing model:** Tiered subscriptions, or per-query with volume discounts
+
+### Business intelligence
+
+Companies can monetize market research and business intelligence.
+
+**What to monetize:**
+- Customer survey results
+- Market analysis reports
+- Competitor intelligence
+- Industry trends
+- Sales data and patterns
+
+**Example queries:**
+- "What features do customers most request in enterprise software?"
+- "How has the adoption of remote work tools changed since 2020?"
+- "What pricing strategies work best in SMB markets?"
+
+**Benefits:**
+- Monetize expensive research
+- Provide insights without revealing sources
+- Build recurring revenue
+- Serve consultants and businesses
+
+**Pricing model:** $1,000/month per seat, or $5 per query
+
+### Scientific data
+
+Research institutions can monetize proprietary datasets.
+
+**What to monetize:**
+- Genomic databases
+- Climate data
+- Materials science data
+- Astronomical observations
+- Chemical compound properties
+
+**Example queries:**
+- "Which genes are associated with Disease X?"
+- "What materials have high thermal conductivity at low cost?"
+- "How has ocean temperature changed in Region Y?"
+
+**Benefits:**
+- Support continued research
+- Enable meta-analyses
+- Maintain competitive advantage
+- Comply with data sharing mandates
+
+**Pricing model:** Free for academic use, paid for commercial applications
+
+## Getting started
+
+<Steps>
+  <Step title="Prepare your data">
+    Organize and structure your data for monetization:
+    
+    <Tabs>
+      <Tab title="Structured data">
+        If you have databases or spreadsheets:
+        
+        1. Export to documents or summaries
+        2. Remove personally identifiable information
+        3. Add metadata for context
+        4. Create documentation describing the data
+      </Tab>
+      <Tab title="Documents">
+        If you have reports or research papers:
+        
+        1. Collect all relevant documents
+        2. Ensure consistent formatting
+        3. Add metadata (dates, topics, sources)
+        4. Create an index or catalog
+      </Tab>
+      <Tab title="Existing vector database">
+        If you already have embeddings:
+        
+        1. Note connection details
+        2. Identify collection names
+        3. Document any required filters
+        4. Test connectivity
+      </Tab>
+    </Tabs>
+  </Step>
+  
+  <Step title="Deploy Syft Space">
+    Choose a deployment that matches your scale:
+    
+    ```bash
+    # Production deployment on cloud VM
+    docker run -d \
+      --name syft-space \
+      --restart unless-stopped \
+      -p 8080:8080 \
+      -v /var/run/docker.sock:/var/run/docker.sock \
+      -v syft-space-data:/data \
+      -e SYFT_ADMIN_API_KEY=secure-secret-key \
+      ghcr.io/openmined/syft-space:latest
+    ```
+    
+    For high-value data, consider:
+    - Dedicated server or VM
+    - 8GB+ RAM for large datasets
+    - Backup and disaster recovery
+    - Monitoring and alerting
+  </Step>
+  
+  <Step title="Create and index your dataset">
+    ```bash
+    curl -X POST http://localhost:8080/api/v1/datasets/ \
+      -H "Authorization: Bearer $ADMIN_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "name": "healthcare-insights",
+        "dtype": "local_file",
+        "configuration": {
+          "httpPort": 8081,
+          "grpcPort": 50051,
+          "collectionName": "HealthcareData",
+          "ingestionPath": "/data/healthcare"
+        },
+        "summary": "De-identified clinical trial outcomes and treatment data"
+      }'
+    ```
+    
+    Place your prepared data files in the ingestion path. Syft Space will automatically index them.
+  </Step>
+  
+  <Step title="Set up monetization endpoint">
+    Create an endpoint with accounting policies:
+    
+    ```bash
+    # Create the endpoint
+    curl -X POST http://localhost:8080/api/v1/endpoints/ \
+      -H "Authorization: Bearer $ADMIN_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "name": "Healthcare Insights API",
+        "slug": "healthcare-insights",
+        "dataset_id": "<dataset-id>",
+        "model_id": "<model-id>",
+        "response_type": "summary"
+      }'
+    
+    # Add usage tracking
+    curl -X POST http://localhost:8080/api/v1/policies/ \
+      -H "Authorization: Bearer $ADMIN_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "name": "Track All Usage",
+        "dtype": "accounting",
+        "configuration": {
+          "track_tokens": true,
+          "track_cost": true,
+          "track_queries": true
+        },
+        "endpoint_id": "<endpoint-id>"
+      }'
+    
+    # Add rate limiting for free tier
+    curl -X POST http://localhost:8080/api/v1/policies/ \
+      -H "Authorization: Bearer $ADMIN_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "name": "Free Tier Limit",
+        "dtype": "rate_limit",
+        "configuration": {
+          "limit": "10/day",
+          "scope": "user"
+        },
+        "endpoint_id": "<endpoint-id>"
+      }'
+    ```
+  </Step>
+  
+  <Step title="Publish to SyftHub">
+    Make your data insights discoverable:
+    
+    ```bash
+    # Register on SyftHub
+    curl -X POST http://localhost:8080/api/v1/marketplaces/register \
+      -H "Authorization: Bearer $ADMIN_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "email": "your@email.com",
+        "organization": "Your Organization"
+      }'
+    
+    # Publish your endpoint
+    curl -X POST http://localhost:8080/api/v1/endpoints/healthcare-insights/publish \
+      -H "Authorization: Bearer $ADMIN_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "visibility": "public",
+        "description": "Query de-identified healthcare data for research insights",
+        "pricing": {
+          "free_queries": 10,
+          "paid_tier": "$0.50 per query or $500/month unlimited"
+        },
+        "tags": ["healthcare", "clinical-trials", "research"]
+      }'
+    ```
+    
+    Your endpoint is now listed at [syfthub.openmined.org](https://syfthub.openmined.org)
+  </Step>
+  
+  <Step title="Set up billing and payments">
+    Integrate with payment systems:
+    
+    - Use SyftHub's built-in payment system (coming soon)
+    - Implement custom billing with usage tracking API
+    - Set up Stripe or similar for subscriptions
+    - Track usage through accounting policies
+  </Step>
+</Steps>
+
+## Pricing strategies
+
+### Pay-per-query
+
+Charge for each query based on complexity or value.
+
+**Advantages:**
+- Low barrier to entry
+- Users pay only for what they use
+- Easy to understand
+
+**Implementation:**
+```bash
+# Track all queries
+curl http://localhost:8080/api/v1/accounting/usage \
+  -H "Authorization: Bearer $ADMIN_API_KEY"
+
+# Bill based on query count
+```
+
+**Pricing examples:**
+- Simple lookups: $0.10 per query
+- Complex analysis: $1.00 per query
+- High-value insights: $5-10 per query
+
+### Subscription tiers
+
+Offer different access levels for different prices.
+
+**Tier structure:**
+
+<CardGroup cols={3}>
+  <Card title="Free" icon="gift">
+    - 10 queries/day
+    - Basic features
+    - Community support
+  </Card>
+  <Card title="Pro" icon="star">
+    - 1,000 queries/month
+    - Advanced features
+    - Email support
+    - $99/month
+  </Card>
+  <Card title="Enterprise" icon="building">
+    - Unlimited queries
+    - All features
+    - Priority support
+    - Custom pricing
+  </Card>
+</CardGroup>
+
+**Implementation:**
+```bash
+# Set different rate limits per tier
+free: "10/day"
+pro: "1000/month"
+enterprise: "unlimited"
+```
+
+### Usage-based pricing
+
+Charge based on actual resource consumption.
+
+**Metrics to track:**
+- Number of queries
+- Tokens consumed
+- Documents retrieved
+- Compute time
+
+**Example pricing:**
+- $0.01 per 1,000 tokens
+- Plus $0.10 per query
+- Volume discounts available
+
+### Custom licensing
+
+Negotiate custom arrangements for large customers.
+
+**Options:**
+- Unlimited access for fixed annual fee
+- Dedicated endpoint with guaranteed uptime
+- Custom data preparation
+- White-label deployment
+
+## Best practices
+
+### Data preparation
+
+<AccordionGroup>
+  <Accordion title="Remove sensitive information">
+    Before indexing:
+    
+    - Remove personally identifiable information (PII)
+    - Redact confidential business details
+    - Aggregate sensitive metrics
+    - Use differential privacy techniques if applicable
+  </Accordion>
+  
+  <Accordion title="Add context and metadata">
+    Improve query quality:
+    
+    - Include data collection methods
+    - Add temporal context (dates, time periods)
+    - Document data sources
+    - Provide statistical context
+  </Accordion>
+  
+  <Accordion title="Validate data quality">
+    Ensure valuable insights:
+    
+    - Check for completeness
+    - Verify accuracy
+    - Test query responses
+    - Monitor for inconsistencies
+  </Accordion>
+</AccordionGroup>
+
+### Access control
+
+<Steps>
+  <Step title="Implement tiered access">
+    Use policies to enforce subscription levels:
+    
+    ```bash
+    # Free tier: strict rate limit
+    {"limit": "10/day", "scope": "user"}
+    
+    # Pro tier: higher limit
+    {"limit": "1000/month", "scope": "user"}
+    
+    # Enterprise: no limit, specific allowlist
+    {"allowlist": ["enterprise@customer.com"]}
+    ```
+  </Step>
+  
+  <Step title="Track usage per user">
+    Monitor and analyze usage patterns:
+    
+    - Which queries are most common?
+    - Who are your power users?
+    - What time of day sees peak usage?
+    - Are users hitting rate limits?
+  </Step>
+  
+  <Step title="Prevent abuse">
+    Protect against misuse:
+    
+    - Set maximum query length
+    - Implement CAPTCHA for free tier
+    - Block suspicious patterns
+    - Review high-volume users
+  </Step>
+</Steps>
+
+### Marketing and discovery
+
+<CardGroup cols={2}>
+  <Card title="Clear documentation" icon="book">
+    Provide examples of valuable queries users can make.
+  </Card>
+  <Card title="Free trial" icon="hand-holding-dollar">
+    Offer generous free tier to demonstrate value.
+  </Card>
+  <Card title="Case studies" icon="chart-bar">
+    Show how customers use your data insights.
+  </Card>
+  <Card title="API documentation" icon="code">
+    Make integration easy with clear API docs.
+  </Card>
+</CardGroup>
+
+## Compliance and legal
+
+### Data privacy regulations
+
+<Warning>
+  Ensure your data monetization complies with relevant regulations:
+  
+  - GDPR (EU)
+  - CCPA (California)
+  - HIPAA (Healthcare)
+  - FERPA (Education)
+  - SOX (Financial)
+</Warning>
+
+Syft Space helps by:
+- Keeping data on your infrastructure
+- Not exposing raw records
+- Tracking all access in audit logs
+- Supporting data residency requirements
+
+### Terms of service
+
+Define clear terms for your data insights:
+
+- Permitted use cases
+- Prohibited uses (e.g., re-identification attempts)
+- Query rate limits
+- Data freshness guarantees
+- Attribution requirements
+- Liability limitations
+
+### Intellectual property
+
+Protect your data rights:
+
+- Clarify ownership of data and insights
+- Define usage rights for customers
+- Restrict redistribution
+- Require attribution
+
+## Example: Healthcare data provider
+
+**Data:** 50,000 de-identified patient records from clinical trials
+
+**Preparation:**
+- Removed all PII
+- Aggregated to prevent re-identification
+- Added metadata (trial protocols, dates, outcomes)
+- Created summaries and reports
+
+**Monetization strategy:**
+- Free: 10 queries/day for research
+- Academic: $100/month for universities
+- Pharma: $1,000/month for commercial research
+- Enterprise: Custom pricing for large pharma
+
+**Results:**
+- 500 free users (researchers)
+- 20 academic subscriptions ($2,000/month)
+- 5 pharmaceutical companies ($5,000/month)
+- 2 enterprise contracts ($50,000/year total)
+- **Total revenue: $108,000/year from data that was previously unused**
+
+**Setup:**
+```
+Deployment: AWS EC2 (m5.xlarge)
+Vector DB: Weaviate Cloud
+AI Model: GPT-4 for query responses
+Policies: Tiered rate limiting, usage tracking
+Published: SyftHub and direct partnerships
+```
+
+## Advanced features
+
+### Custom endpoints for customers
+
+Create dedicated endpoints for enterprise customers:
+
+```bash
+# Create customer-specific endpoint
+curl -X POST http://localhost:8080/api/v1/endpoints/ \
+  -d '{
+    "name": "Acme Corp Healthcare Data",
+    "slug": "acme-healthcare",
+    "dataset_id": "<dataset-id>",
+    "model_id": "<premium-model-id>",
+    "response_type": "both"
+  }'
+
+# Add customer-only access
+curl -X POST http://localhost:8080/api/v1/policies/ \
+  -d '{
+    "name": "Acme Only",
+    "dtype": "access",
+    "configuration": {
+      "allowlist": ["*@acmecorp.com"]
+    },
+    "endpoint_id": "<endpoint-id>"
+  }'
+```
+
+### Analytics and reporting
+
+Track key metrics:
+
+```python
+import requests
+
+# Get usage statistics
+response = requests.get(
+    'http://localhost:8080/api/v1/accounting/usage',
+    params={'start_date': '2026-01-01', 'end_date': '2026-01-31'},
+    headers={'Authorization': 'Bearer admin-key'}
+)
+
+usage = response.json()
+print(f"Total queries: {usage['total_queries']}")
+print(f"Total tokens: {usage['total_tokens']}")
+print(f"Unique users: {usage['unique_users']}")
+print(f"Estimated revenue: ${usage['estimated_revenue']}")
+```
+
+### Integration with payment systems
+
+```python
+import stripe
+import requests
+
+stripe.api_key = 'sk_test_...'
+
+# When user exceeds free tier
+def upgrade_to_paid(user_email, tier='pro'):
+    # Create Stripe subscription
+    subscription = stripe.Subscription.create(
+        customer=get_stripe_customer(user_email),
+        items=[{'price': 'price_pro_tier'}]
+    )
+    
+    # Update Syft Space access
+    requests.post(
+        'http://localhost:8080/api/v1/policies/',
+        json={
+            'name': f'Pro Tier - {user_email}',
+            'dtype': 'rate_limit',
+            'configuration': {'limit': '1000/month'},
+            'user_email': user_email
+        },
+        headers={'Authorization': 'Bearer admin-key'}
+    )
+```
+
+## Learn more
+
+<CardGroup cols={2}>
+  <Card title="Datasets" icon="database" href="/space/components/datasets">
+    Managing and preparing your data
+  </Card>
+  <Card title="Endpoints" icon="plug" href="/space/components/endpoints">
+    Creating queryable endpoints
+  </Card>
+  <Card title="Policies" icon="shield" href="/space/components/policies">
+    Access control and usage tracking
+  </Card>
+  <Card title="API reference" icon="code" href="/space/api">
+    Complete API documentation
+  </Card>
+</CardGroup>
+
+---
+
+<Note>
+  Ready to monetize your data? Start with our [installation guide](/installation) or ask questions in our [community](/resources/support).
+</Note>

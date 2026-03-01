@@ -1,0 +1,133 @@
+---
+title: List models
+description: Retrieve all models in your tenant
+---
+
+List all model instances configured in your tenant. Returns models with their connected endpoints.
+
+## Response
+
+Returns an array of model objects.
+
+<ResponseField name="id" type="uuid">
+  Unique identifier for the model.
+</ResponseField>
+
+<ResponseField name="name" type="string">
+  Model name.
+</ResponseField>
+
+<ResponseField name="dtype" type="string">
+  Model type identifier (e.g., `openai`, `anthropic`, `ollama`).
+</ResponseField>
+
+<ResponseField name="configuration" type="object">
+  Model-specific configuration settings.
+</ResponseField>
+
+<ResponseField name="summary" type="string">
+  Brief description of the model.
+</ResponseField>
+
+<ResponseField name="tags" type="string">
+  Comma-separated tags.
+</ResponseField>
+
+<ResponseField name="created_at" type="datetime">
+  Timestamp when the model was created.
+</ResponseField>
+
+<ResponseField name="connected_endpoints" type="array">
+  Array of endpoints using this model.
+  
+  <Expandable title="Endpoint properties">
+    <ResponseField name="connected_endpoints[].id" type="uuid">
+      Endpoint unique identifier.
+    </ResponseField>
+    
+    <ResponseField name="connected_endpoints[].name" type="string">
+      Endpoint name.
+    </ResponseField>
+    
+    <ResponseField name="connected_endpoints[].slug" type="string">
+      Endpoint URL-friendly slug.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<RequestExample>
+```bash cURL
+curl https://your-server.com/api/v1/models \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+```python Python
+import requests
+
+response = requests.get(
+    "https://your-server.com/api/v1/models",
+    headers={"Authorization": "Bearer YOUR_API_KEY"}
+)
+
+models = response.json()
+for model in models:
+    print(f"{model['name']} ({model['dtype']}) - {len(model['connected_endpoints'])} endpoints")
+```
+</RequestExample>
+
+<ResponseExample>
+```json 200 OK
+[
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "name": "gpt-4-assistant",
+    "dtype": "openai",
+    "configuration": {
+      "api_key": "sk-...",
+      "model": "gpt-4",
+      "base_url": "https://api.openai.com/v1",
+      "system_prompt": "You are a helpful AI assistant."
+    },
+    "summary": "GPT-4 model for general assistance",
+    "tags": "openai,gpt-4,assistant",
+    "created_at": "2024-03-15T10:30:00Z",
+    "connected_endpoints": [
+      {
+        "id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+        "name": "Support Assistant",
+        "slug": "support-assistant"
+      }
+    ]
+  },
+  {
+    "id": "660f9500-f39c-52e5-b827-557766551111",
+    "name": "claude-3-opus",
+    "dtype": "anthropic",
+    "configuration": {
+      "api_key": "sk-ant-...",
+      "model": "claude-3-opus-20240229"
+    },
+    "summary": "Claude 3 Opus for complex reasoning",
+    "tags": "anthropic,claude-3,opus",
+    "created_at": "2024-03-16T14:20:00Z",
+    "connected_endpoints": []
+  }
+]
+```
+</ResponseExample>
+
+## Endpoint
+
+<CodeGroup>
+```text HTTP Method
+GET
+```
+
+```text Path
+/api/v1/models
+```
+
+```text Authentication
+Bearer token required
+```
+</CodeGroup>

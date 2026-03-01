@@ -1,0 +1,565 @@
+---
+title: Publishing to SyftHub
+description: Learn how to publish your Syft Space endpoints to SyftHub marketplace for discovery and access
+---
+
+SyftHub is the decentralized marketplace where knowledge providers meet knowledge seekers. Publishing your endpoints to SyftHub makes them discoverable, allows others to query your data, and connects you to the broader Syft network. This guide shows you how to publish and manage your endpoints on SyftHub.
+
+## Understanding SyftHub
+
+SyftHub acts as a registry and discovery layer for Syft Space endpoints:
+
+**For providers (you):**
+- Publish endpoints to reach a wider audience
+- Control access through policies
+- Track usage and analytics
+- Monetize your knowledge
+
+**For consumers:**
+- Discover endpoints across the network
+- Query multiple Spaces through a unified interface
+- Pay for access to premium knowledge
+- Build applications on top of distributed knowledge
+
+<Note>
+Publishing to SyftHub doesn't give others access to your raw data. They can only query through your endpoint's API, subject to your policies.
+</Note>
+
+## Prerequisites
+
+Before publishing, ensure you have:
+
+<Steps>
+
+### Working endpoint
+
+Your endpoint must be:
+- Fully configured with dataset and/or model
+- Tested and verified to work correctly
+- Set to `published: true` status
+
+### Policies configured
+
+Add appropriate policies:
+- **Access policy** - Control who can query (recommended)
+- **Rate limit policy** - Prevent abuse (recommended)
+- **Accounting policy** - Track costs or require payment (optional)
+
+### Network connectivity
+
+For local deployments:
+- **Developer token** - Required to publish from localhost
+  - Configured in Settings → Network
+  - Contact OpenMined to obtain token during beta
+
+For cloud/VM deployments:
+- **Public IP address** - Automatically detected
+- No developer token needed
+
+### Marketplace connection
+
+Your Syft Space must be connected to at least one marketplace:
+- Default: SyftHub (syfthub.openmined.org)
+- Additional marketplaces can be added in Settings
+
+</Steps>
+
+## Publishing an endpoint
+
+<Steps>
+
+### Navigate to endpoint
+
+Click on the endpoint you want to publish.
+
+### Review endpoint details
+
+Verify your endpoint is ready:
+- Name and description are clear and informative
+- Tags accurately describe the content
+- Dataset and model are healthy
+- Policies are configured appropriately
+
+### Check slug availability
+
+Before publishing, verify your slug isn't already taken:
+
+1. Click **Check Availability** on the endpoint detail page
+2. Review availability across all marketplaces
+3. If taken, choose a different slug and update your endpoint
+
+<Warning>
+Slug conflicts will cause publishing to fail. Always check availability first.
+</Warning>
+
+### Choose marketplaces
+
+Decide where to publish:
+
+**Option 1: Publish to all marketplaces**
+```json
+{
+  "publish_to_all_marketplaces": true
+}
+```
+
+**Option 2: Publish to specific marketplaces**
+```json
+{
+  "marketplace_ids": [
+    "123e4567-e89b-12d3-a456-426614174000",
+    "223e4567-e89b-12d3-a456-426614174000"
+  ],
+  "publish_to_all_marketplaces": false
+}
+```
+
+### Publish endpoint
+
+Click **Publish to SyftHub** and select your marketplaces.
+
+### Review results
+
+The publish operation returns results for each marketplace:
+
+```json
+{
+  "endpoint_slug": "research-qa",
+  "results": [
+    {
+      "marketplace_id": "...",
+      "marketplace_name": "SyftHub",
+      "success": true,
+      "message": "Successfully published endpoint",
+      "error": null
+    }
+  ]
+}
+```
+
+</Steps>
+
+## Publishing via API
+
+You can also publish endpoints programmatically:
+
+**Endpoint:** `POST /api/v1/endpoints/{slug}/publish`
+
+**Headers:**
+```
+Content-Type: application/json
+Authorization: Bearer <your-token>
+```
+
+**Body (publish to all):**
+```json
+{
+  "publish_to_all_marketplaces": true
+}
+```
+
+**Body (publish to specific):**
+```json
+{
+  "marketplace_ids": [
+    "123e4567-e89b-12d3-a456-426614174000"
+  ],
+  "publish_to_all_marketplaces": false
+}
+```
+
+### cURL example
+
+```bash
+curl -X POST http://localhost:8080/api/v1/endpoints/research-qa/publish \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer your-token" \
+  -d '{
+    "publish_to_all_marketplaces": true
+  }'
+```
+
+### Python example
+
+```python
+import requests
+
+url = "http://localhost:8080/api/v1/endpoints/research-qa/publish"
+headers = {
+    "Content-Type": "application/json",
+    "Authorization": "Bearer your-token"
+}
+payload = {
+    "publish_to_all_marketplaces": True
+}
+
+response = requests.post(url, json=payload, headers=headers)
+result = response.json()
+
+for marketplace_result in result["results"]:
+    if marketplace_result["success"]:
+        print(f"✓ Published to {marketplace_result['marketplace_name']}")
+    else:
+        print(f"✗ Failed: {marketplace_result['error']}")
+```
+
+## What happens when you publish
+
+When you publish an endpoint to SyftHub:
+
+### Registration
+
+1. **Metadata sent** - Name, description, tags, response type
+2. **Connection info** - Your Space's public URL or developer token
+3. **Policy summary** - Access requirements, rate limits, pricing
+4. **Health check** - SyftHub verifies the endpoint is accessible
+
+### Discovery
+
+1. **Search indexing** - Endpoint becomes searchable on SyftHub
+2. **Category listing** - Appears in relevant category pages
+3. **Tag filtering** - Can be found via tag searches
+4. **Recommendations** - May appear in related endpoint suggestions
+
+### Connectivity
+
+1. **Proxy setup** - SyftHub routes queries to your Space
+2. **Authentication** - SyftHub issues satellite tokens for users
+3. **Monitoring** - Usage and health metrics tracked
+4. **Updates** - Changes to your endpoint sync to SyftHub
+
+<Tip>
+Your endpoint remains under your control. You can unpublish, update, or delete it at any time.
+</Tip>
+
+## Managing published endpoints
+
+### Viewing publication status
+
+Check where your endpoint is published:
+
+1. Navigate to the endpoint detail page
+2. View the "Published to" section
+3. See status for each marketplace:
+   - Published and active
+   - Publication pending
+   - Publication failed (with error)
+   - Not published
+
+### Updating published endpoints
+
+Changes to your endpoint automatically sync to SyftHub:
+
+**Automatically synced:**
+- Name changes
+- Description updates
+- Tag modifications
+- Policy changes
+- Health status
+
+**Requires manual action:**
+- Slug changes (must unpublish and republish)
+- Dataset/model changes (unpublish, update, republish recommended)
+- Response type changes (unpublish, update, republish recommended)
+
+<Note>
+Metadata syncs within a few minutes. Allow time for changes to propagate before testing.
+</Note>
+
+### Unpublishing endpoints
+
+Remove your endpoint from SyftHub:
+
+<Steps>
+
+### Navigate to endpoint
+
+Click on the published endpoint.
+
+### Unpublish
+
+Click **Unpublish from SyftHub**.
+
+### Confirm action
+
+Confirm you want to unpublish. This will:
+- Remove the endpoint from search results
+- Stop accepting new queries through SyftHub
+- Invalidate existing satellite tokens for this endpoint
+- Preserve your local endpoint configuration
+
+</Steps>
+
+**Via API:**
+
+```bash
+curl -X POST http://localhost:8080/api/v1/endpoints/research-qa/unpublish \
+  -H "Authorization: Bearer your-token"
+```
+
+<Warning>
+Unpublishing immediately breaks existing integrations. Notify users before unpublishing production endpoints.
+</Warning>
+
+## Developer token setup
+
+For local deployments, you need a developer token to publish:
+
+### Obtaining a token
+
+1. **During onboarding** - Add token when registering your Space
+2. **Settings page** - Navigate to Settings → Network → Developer Token
+3. **Contact OpenMined** - Request token during beta period
+
+### Configuring the token
+
+<Steps>
+
+### Open settings
+
+Navigate to Settings → Network.
+
+### Enter token
+
+Paste your developer token in the "Developer Token" field.
+
+### Save configuration
+
+Click **Save**. Your Space validates the token with SyftHub.
+
+### Verify connection
+
+Check that the connection status shows "Connected".
+
+</Steps>
+
+### When tokens are needed
+
+| Deployment Type | Token Required? | Reason |
+|-----------------|-----------------|--------|
+| Local machine (localhost) | Yes | No public IP for SyftHub to reach |
+| Cloud VM with public IP | No | SyftHub can reach directly |
+| Docker on VM | No | Uses VM's public IP |
+| Local development only | No | Not publishing to SyftHub |
+
+<Note>
+Developer tokens are temporary during beta. Production will use automatic tunnel setup.
+</Note>
+
+## Marketplace configuration
+
+Manage which marketplaces your Space can publish to:
+
+### Viewing marketplaces
+
+Navigate to Settings → Marketplaces to see:
+- Connected marketplaces
+- Connection status (active, error, disabled)
+- Number of endpoints published to each
+
+### Adding marketplaces
+
+<Steps>
+
+### Click add marketplace
+
+On the Marketplaces settings page, click **Add Marketplace**.
+
+### Enter marketplace details
+
+- **Name** - Display name (e.g., "Custom Hub")
+- **URL** - Marketplace API endpoint
+- **API Key** - Authentication credential (if required)
+
+### Save and test
+
+Click **Save**. Your Space tests the connection.
+
+### Publish endpoints
+
+New marketplace appears in publish dialogs.
+
+</Steps>
+
+### Removing marketplaces
+
+1. Unpublish all endpoints from the marketplace first
+2. Click **Remove** on the marketplace settings page
+3. Confirm removal
+
+<Warning>
+Removing a marketplace while endpoints are published will leave orphaned listings. Always unpublish first.
+</Warning>
+
+## Monitoring published endpoints
+
+### Usage analytics
+
+Track how your published endpoints are being used:
+
+**Per-endpoint metrics:**
+- Total queries over time
+- Unique users querying
+- Geographic distribution
+- Peak usage times
+- Average query cost
+
+**Policy enforcement:**
+- Access denials (403 errors)
+- Rate limit hits (429 errors)
+- Failed queries (400/500 errors)
+- Successful queries (200 responses)
+
+### Health monitoring
+
+SyftHub periodically checks your endpoint health:
+- Every 5 minutes (default interval)
+- After receiving error reports from users
+- When you update the endpoint
+
+**Health statuses:**
+- **Healthy** - Endpoint responding normally
+- **Degraded** - Elevated error rates
+- **Unhealthy** - Failing health checks
+- **Offline** - Unable to reach endpoint
+
+<Note>
+Endpoints marked "Unhealthy" or "Offline" are deprioritized in search results until health is restored.
+</Note>
+
+### User feedback
+
+Monitor feedback from SyftHub users:
+- Ratings (if enabled)
+- Usage frequency
+- Error reports
+- Feature requests
+
+## Troubleshooting publication
+
+### Publication fails
+
+**Symptom:** Publish operation returns errors
+
+**Common causes:**
+
+1. **Slug conflict**
+   - Another endpoint already uses this slug
+   - Solution: Check slug availability and choose a unique one
+
+2. **Network unreachable**
+   - SyftHub cannot reach your Space
+   - Solution (local): Add/verify developer token
+   - Solution (VM): Check firewall rules and public IP
+
+3. **Authentication failed**
+   - Invalid developer token or credentials
+   - Solution: Verify token in Settings → Network
+
+4. **Endpoint unhealthy**
+   - Dataset or model not responding
+   - Solution: Test connection on endpoint detail page
+
+### Queries fail after publishing
+
+**Symptom:** Users receive errors when querying
+
+**Common causes:**
+
+1. **Policies too restrictive**
+   - Access policy blocks legitimate users
+   - Solution: Review and adjust access patterns
+
+2. **Rate limits exceeded**
+   - Unexpected query volume
+   - Solution: Increase rate limits or add user tiers
+
+3. **Backend issues**
+   - Dataset or model becomes unhealthy
+   - Solution: Check provisioner status and health checks
+
+4. **Satellite token issues**
+   - SyftHub authentication failing
+   - Solution: Verify marketplace connection in settings
+
+### Endpoint not appearing in search
+
+**Symptom:** Users can't find your endpoint on SyftHub
+
+**Solutions:**
+
+1. **Wait for indexing** - Allow 5-10 minutes after publishing
+2. **Check health status** - Unhealthy endpoints are deprioritized
+3. **Improve metadata** - Add relevant tags and clear description
+4. **Verify publication** - Check endpoint detail page shows "Published"
+
+## Best practices
+
+### Before publishing
+
+1. **Test thoroughly** - Verify endpoint works with various queries
+2. **Set up policies** - Don't publish without access control and rate limits
+3. **Write clear descriptions** - Help users understand what your endpoint offers
+4. **Choose relevant tags** - Improve discoverability with accurate tags
+5. **Check slug availability** - Avoid conflicts before publishing
+
+### After publishing
+
+1. **Monitor health** - Set up alerts for health status changes
+2. **Track usage** - Watch for unusual patterns or abuse
+3. **Respond to issues** - Fix problems quickly to maintain reputation
+4. **Update regularly** - Keep descriptions and tags current
+5. **Gather feedback** - Learn from how users interact with your endpoint
+
+### Maintenance
+
+1. **Schedule updates** - Announce maintenance windows to users
+2. **Test before deploying** - Use unpublished test endpoints
+3. **Version carefully** - Breaking changes may require new endpoints
+4. **Document changes** - Keep description updated with new features
+5. **Monitor post-update** - Watch for issues after changes
+
+### Security
+
+1. **Use access policies** - Don't publish completely open endpoints
+2. **Implement rate limits** - Protect against abuse
+3. **Monitor queries** - Look for adversarial or malicious patterns
+4. **Rotate credentials** - Update API keys regularly
+5. **Review policies** - Adjust based on actual usage patterns
+
+## Understanding the Syft network
+
+### Decentralized architecture
+
+The Syft network is designed for autonomy:
+- **No central authority** - Each Space is independent
+- **Open protocol** - Anyone can create marketplaces
+- **Direct connections** - Queries route directly to your Space
+- **Local control** - You manage your data and policies
+
+### Multiple marketplaces
+
+You can publish to multiple marketplaces simultaneously:
+- **General purpose** - SyftHub for broad discovery
+- **Industry specific** - Vertical marketplaces (healthcare, legal, etc.)
+- **Private networks** - Organization-specific registries
+- **Regional** - Geographic or language-focused marketplaces
+
+### Attribution and tracking
+
+The network maintains attribution:
+- **Query origin** - Every query includes verified user identity
+- **Usage tracking** - Automatic accounting across network
+- **Citation** - Source endpoints credited in responses
+- **Reputation** - Reliability and quality tracked over time
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Query endpoints" icon="code" href="/guides/querying-endpoints">
+    Learn how users will query your published endpoints
+  </Card>
+  <Card title="Monitor usage" icon="chart-line" href="/space/monitoring">
+    Track analytics and performance for your published endpoints
+  </Card>
+</CardGroup>

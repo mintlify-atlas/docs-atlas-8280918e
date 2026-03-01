@@ -1,0 +1,104 @@
+---
+title: Create policy
+description: Create a new policy for an endpoint
+---
+
+## Create a new policy
+
+Create a new policy to apply rate limiting, access control, or accounting rules to an endpoint.
+
+### Endpoint
+
+```
+POST /policies/
+```
+
+### Authentication
+
+Requires tenant authentication via the `X-Tenant-ID` header or similar tenant identification mechanism.
+
+### Request body
+
+<ParamField path="name" type="string" required>
+  Name for the policy
+</ParamField>
+
+<ParamField path="policy_type" type="string" required>
+  Policy type name. Available types: `rate_limit`, `accounting`, `access`
+</ParamField>
+
+<ParamField path="configuration" type="object" required>
+  Configuration object matching the schema for the specified policy type. See [policy types](/api/policies/types) for available configuration options.
+</ParamField>
+
+<ParamField path="endpoint_id" type="string" required>
+  UUID of the endpoint to attach this policy to
+</ParamField>
+
+### Response
+
+Returns the created policy with status code `201`.
+
+<ResponseField name="id" type="string">
+  Unique identifier (UUID) of the policy
+</ResponseField>
+
+<ResponseField name="name" type="string">
+  Policy name
+</ResponseField>
+
+<ResponseField name="policy_type" type="string">
+  Policy type name
+</ResponseField>
+
+<ResponseField name="configuration" type="object">
+  Policy configuration object
+</ResponseField>
+
+<ResponseField name="endpoint_id" type="string">
+  UUID of the endpoint this policy is attached to
+</ResponseField>
+
+<ResponseField name="created_at" type="string">
+  Creation timestamp in ISO 8601 format
+</ResponseField>
+
+<ResponseField name="updated_at" type="string">
+  Last update timestamp in ISO 8601 format
+</ResponseField>
+
+### Example request
+
+```bash
+curl -X POST https://api.syftspace.example/policies/ \
+  -H "Content-Type: application/json" \
+  -H "X-Tenant-ID: your-tenant-id" \
+  -d '{
+    "name": "Rate limit 100/min",
+    "policy_type": "rate_limit",
+    "configuration": {
+      "limit": "100/m",
+      "scope": "per_user",
+      "applied_to": ["*"]
+    },
+    "endpoint_id": "123e4567-e89b-12d3-a456-426614174000"
+  }'
+```
+
+### Example response
+
+```json
+{
+  "id": "987fcdeb-51a2-43d7-8901-abcdef123456",
+  "name": "Rate limit 100/min",
+  "policy_type": "rate_limit",
+  "configuration": {
+    "limit": "100/m",
+    "scope": "per_user",
+    "applied_to": ["*"]
+  },
+  "endpoint_id": "123e4567-e89b-12d3-a456-426614174000",
+  "created_at": "2026-03-01T10:30:00Z",
+  "updated_at": "2026-03-01T10:30:00Z"
+}
+```

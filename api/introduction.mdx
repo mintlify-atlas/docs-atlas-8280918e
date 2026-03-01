@@ -1,0 +1,329 @@
+---
+title: API introduction
+description: Introduction to the Syft Space REST API
+---
+
+The Syft Space API is a RESTful API that allows you to programmatically manage datasets, models, endpoints, and policies.
+
+## Base URL
+
+All API requests are made to:
+
+```
+http://localhost:8080/api/v1
+```
+
+For production deployments, replace `localhost:8080` with your server's domain or IP address.
+
+## API structure
+
+The API is organized into the following resource groups:
+
+<CardGroup cols={2}>
+  <Card title="Endpoints" icon="link" href="/api/endpoints/create">
+    Create and manage RAG endpoints
+  </Card>
+  <Card title="Datasets" icon="database" href="/api/datasets/create">
+    Manage vector databases and data sources
+  </Card>
+  <Card title="Models" icon="robot" href="/api/models/create">
+    Configure AI model providers
+  </Card>
+  <Card title="Policies" icon="shield" href="/api/policies/create">
+    Set access control and rate limits
+  </Card>
+  <Card title="Settings" icon="gear" href="/api/settings/get">
+    Configure network and marketplace settings
+  </Card>
+</CardGroup>
+
+## Versioning
+
+The API is versioned via the URL path:
+
+- **Current version**: `v1`
+- **Base path**: `/api/v1`
+
+Future versions will be available at `/api/v2`, `/api/v3`, etc. while maintaining backward compatibility.
+
+## Request format
+
+### HTTP methods
+
+The API uses standard HTTP methods:
+
+- `GET` - Retrieve resources
+- `POST` - Create new resources
+- `PATCH` - Partially update resources
+- `DELETE` - Delete resources
+
+### Content type
+
+All requests with a body must include:
+
+```http
+Content-Type: application/json
+```
+
+### Request body
+
+Request bodies are JSON:
+
+```json
+{
+  "name": "my-dataset",
+  "dtype": "local_file",
+  "configuration": {
+    "connection_override": null
+  }
+}
+```
+
+## Response format
+
+### Success responses
+
+Successful requests return JSON with appropriate status codes:
+
+- `200 OK` - Successful GET, PATCH, or DELETE
+- `201 Created` - Successful POST (resource created)
+
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "name": "my-dataset",
+  "dtype": "local_file",
+  "created_at": "2024-01-15T10:30:00Z"
+}
+```
+
+### Error responses
+
+Errors return JSON with error details:
+
+```json
+{
+  "detail": "Dataset 'my-dataset' not found"
+}
+```
+
+**Common status codes:**
+
+- `400 Bad Request` - Invalid request parameters
+- `401 Unauthorized` - Missing or invalid authentication
+- `403 Forbidden` - Insufficient permissions
+- `404 Not Found` - Resource not found
+- `409 Conflict` - Resource already exists or conflict
+- `422 Unprocessable Entity` - Validation error
+- `429 Too Many Requests` - Rate limit exceeded
+- `500 Internal Server Error` - Server error
+
+### Validation errors
+
+Validation errors include field-specific details:
+
+```json
+{
+  "detail": [
+    {
+      "loc": ["body", "name"],
+      "msg": "field required",
+      "type": "value_error.missing"
+    },
+    {
+      "loc": ["body", "slug"],
+      "msg": "string does not match regex \"^[a-z0-9-]{3,64}$\"",
+      "type": "value_error.str.regex"
+    }
+  ]
+}
+```
+
+## Pagination
+
+List endpoints support pagination:
+
+```http
+GET /api/v1/endpoints/?skip=0&limit=50
+```
+
+**Parameters:**
+
+- `skip` - Number of items to skip (default: 0)
+- `limit` - Maximum items to return (default: 100, max: 1000)
+
+**Response:**
+
+```json
+{
+  "items": [...],
+  "total": 250,
+  "skip": 0,
+  "limit": 50
+}
+```
+
+## Timestamps
+
+All timestamps are in ISO 8601 format with UTC timezone:
+
+```
+2024-01-15T10:30:00Z
+```
+
+## Interactive documentation
+
+When running locally, access interactive API documentation:
+
+- **Swagger UI**: http://localhost:8080/docs
+- **ReDoc**: http://localhost:8080/redoc
+
+These interfaces allow you to:
+
+- Browse all endpoints
+- View request/response schemas
+- Test endpoints directly
+- See example requests and responses
+
+<Info>
+  The interactive docs are automatically generated from the OpenAPI specification.
+</Info>
+
+## Rate limiting
+
+API rate limits are enforced per tenant:
+
+- **Default limit**: 1000 requests per hour
+- **Burst limit**: 100 requests per minute
+
+When rate limited, you'll receive:
+
+```http
+HTTP/1.1 429 Too Many Requests
+Retry-After: 60
+
+{
+  "detail": "Rate limit exceeded. Retry after 60 seconds."
+}
+```
+
+<Note>
+  Rate limits can be customized per endpoint using [policy configuration](/api/policies/create).
+</Note>
+
+## CORS
+
+Cross-Origin Resource Sharing (CORS) is enabled for:
+
+- `http://localhost:5173` (development frontend)
+- Your configured production domains
+
+CORS headers included:
+
+```http
+Access-Control-Allow-Origin: http://localhost:5173
+Access-Control-Allow-Methods: GET, POST, PATCH, DELETE, OPTIONS
+Access-Control-Allow-Headers: Content-Type, Authorization
+Access-Control-Allow-Credentials: true
+```
+
+## Client libraries
+
+### Python
+
+```python
+import requests
+
+class SyftSpaceClient:
+    def __init__(self, base_url: str, token: str):
+        self.base_url = base_url
+        self.headers = {
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json"
+        }
+    
+    def create_dataset(self, name: str, dtype: str, config: dict):
+        response = requests.post(
+            f"{self.base_url}/api/v1/datasets/",
+            json={
+                "name": name,
+                "dtype": dtype,
+                "configuration": config
+            },
+            headers=self.headers
+        )
+        response.raise_for_status()
+        return response.json()
+
+# Usage
+client = SyftSpaceClient(
+    base_url="http://localhost:8080",
+    token="your-token"
+)
+
+dataset = client.create_dataset(
+    name="my-docs",
+    dtype="local_file",
+    config={"connection_override": None}
+)
+```
+
+### JavaScript/TypeScript
+
+```typescript
+class SyftSpaceClient {
+  constructor(
+    private baseUrl: string,
+    private token: string
+  ) {}
+
+  async createDataset(name: string, dtype: string, config: object) {
+    const response = await fetch(
+      `${this.baseUrl}/api/v1/datasets/`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ name, dtype, configuration: config })
+      }
+    )
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${await response.text()}`)
+    }
+
+    return response.json()
+  }
+}
+
+// Usage
+const client = new SyftSpaceClient(
+  'http://localhost:8080',
+  'your-token'
+)
+
+const dataset = await client.createDataset(
+  'my-docs',
+  'local_file',
+  { connection_override: null }
+)
+```
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Authentication" icon="key" href="/api/authentication">
+    Learn how to authenticate API requests
+  </Card>
+  <Card title="Create endpoint" icon="link" href="/api/endpoints/create">
+    Create your first RAG endpoint
+  </Card>
+  <Card title="Query endpoint" icon="message" href="/api/endpoints/query">
+    Query an endpoint with AI
+  </Card>
+  <Card title="Manage policies" icon="shield" href="/api/policies/create">
+    Set up access control and rate limits
+  </Card>
+</CardGroup>

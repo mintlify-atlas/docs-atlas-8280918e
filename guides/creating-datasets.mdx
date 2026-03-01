@@ -1,0 +1,348 @@
+---
+title: Creating datasets
+description: Learn how to create and configure datasets to store and index your data in Syft Space
+---
+
+Datasets are the foundation of your Syft Space endpoints. They store and index your documents, making them searchable through vector similarity. This guide walks you through creating and configuring datasets.
+
+## Understanding dataset types
+
+Syft Space supports multiple dataset types, each designed for different use cases:
+
+### Local file dataset
+
+Stores documents locally using ChromaDB for vector search. Best for getting started quickly with your own documents.
+
+**Icon:** 🎨
+
+**Key features:**
+- Automatic file watching and ingestion
+- Supports PDF, TXT, HTML, XLSX, DOCX, MD, CSV, JSON
+- Built-in ChromaDB provisioning
+- Local storage with persistent data
+
+**Configuration:**
+- `collectionName` - Name for your document collection (alphanumeric and underscores only)
+- `httpPort` - ChromaDB server HTTP port (default: 8100)
+- `filePaths` - List of directories or files to watch for automatic ingestion
+- `ingestFileTypeOptions` - File extensions to ingest (e.g., `.pdf`, `.txt`)
+
+### Remote Weaviate
+
+Connects to an existing Weaviate instance for vector search. Ideal if you already have data in Weaviate.
+
+**Icon:** 🌐
+
+**Key features:**
+- Connect to hosted or self-hosted Weaviate
+- Query existing collections
+- Custom filters and metadata mapping
+- Third-party embedding API support
+
+**Configuration:**
+- `http_url` - HTTP URL of your Weaviate server
+- `grpc_url` - gRPC URL of your Weaviate server
+- `api_key` - API key for authentication
+- `collection_name` - Name of the Weaviate collection
+- `content_property` - Property to use as main content (optional)
+- `metadata_properties` - Properties to include in metadata (optional)
+- `filters` - Query filters to apply when searching (optional)
+- `headers` - Additional HTTP headers for third-party APIs (optional)
+- `default_similarity_threshold` - Default similarity threshold (default: 0.5)
+
+## Creating a dataset
+
+<Steps>
+
+### Navigate to datasets
+
+From your Syft Space dashboard, click **Datasets** in the sidebar, then click **Add Dataset**.
+
+### Choose dataset type
+
+Select the dataset type that matches your needs:
+
+- **Local file** - For uploading and managing files locally
+- **Remote Weaviate** - For connecting to an existing Weaviate instance
+
+### Configure dataset settings
+
+Fill in the required configuration fields based on your selected type.
+
+<Tabs>
+  <Tab title="Local file">
+    **Basic settings:**
+    
+    1. **Name** - A unique identifier for your dataset (e.g., "research-papers")
+    2. **Collection name** - Name for the ChromaDB collection (e.g., "ResearchDocs")
+    3. **Summary** - Brief description of what this dataset contains
+    4. **Tags** - Comma-separated tags for organization (e.g., "research,papers,ai")
+    
+    **File watching:**
+    
+    1. Click **Add file path** to specify directories or files to watch
+    2. Enter the absolute path (e.g., `/home/user/documents`)
+    3. Add a description for this path (e.g., "Research papers from 2024")
+    4. Add multiple paths if needed
+    
+    **File type options:**
+    
+    Select which file types to ingest from your watched paths:
+    - `.pdf` - PDF documents
+    - `.txt` - Plain text files
+    - `.md` - Markdown files
+    - `.docx` - Word documents
+    - `.html` - HTML files
+    - `.csv` - CSV data files
+    - `.json` - JSON data files
+    - `.xlsx` - Excel spreadsheets
+  </Tab>
+  
+  <Tab title="Remote Weaviate">
+    **Connection settings:**
+    
+    1. **Name** - A unique identifier for your dataset (e.g., "production-kb")
+    2. **HTTP URL** - Full HTTP URL (e.g., `https://my-cluster.weaviate.network`)
+    3. **gRPC URL** - Full gRPC URL (e.g., `https://my-cluster.weaviate.network`)
+    4. **API Key** - Your Weaviate API key
+    5. **Collection name** - Name of the collection in Weaviate
+    6. **Summary** - Brief description of this dataset
+    7. **Tags** - Comma-separated tags (e.g., "production,knowledge-base")
+    
+    **Content mapping (optional):**
+    
+    1. **Content property** - Specify which property contains the main text (e.g., "body", "description")
+       - If not specified, all properties are JSON-serialized as content
+    2. **Metadata properties** - List properties to include in metadata (e.g., ["title", "author", "date"])
+       - If not specified, all properties are included
+    
+    **Advanced options (optional):**
+    
+    1. **Default similarity threshold** - Minimum similarity score (0.0-1.0, default: 0.5)
+    2. **Headers** - Additional HTTP headers for third-party embedding APIs
+       ```json
+       {
+         "X-Cohere-Api-Key": "your-cohere-key",
+         "X-OpenAI-Api-Key": "your-openai-key"
+       }
+       ```
+    3. **Filters** - Query filters in Weaviate filter format
+  </Tab>
+</Tabs>
+
+### Save and provision
+
+Click **Create Dataset**. For local file datasets, Syft Space automatically:
+
+1. Starts a ChromaDB Docker container
+2. Creates the collection with your specified settings
+3. Begins watching your specified file paths
+4. Ingests existing files automatically
+
+For remote Weaviate datasets, Syft Space validates the connection and collection access.
+
+</Steps>
+
+## Managing file ingestion
+
+For local file datasets, Syft Space provides automatic file watching and ingestion.
+
+### Starting ingestion
+
+<Steps>
+
+### View dataset details
+
+Click on your dataset to view its details page.
+
+### Check ingestion status
+
+The dataset detail page shows:
+- Whether file watching is active
+- Total ingestion jobs (pending, in progress, completed, failed)
+- List of recent ingestion jobs with status
+
+### Start watching
+
+If file watching is not active, click **Start Ingestion** to:
+- Begin monitoring your configured file paths
+- Create ingestion jobs for all existing files
+- Automatically process new files as they appear
+
+</Steps>
+
+### Monitoring ingestion jobs
+
+Each file ingestion creates a job that you can monitor:
+
+- **Pending** - Waiting to be processed
+- **In progress** - Currently being parsed and indexed
+- **Completed** - Successfully ingested
+- **Failed** - Ingestion failed (see error message)
+- **Cancelled** - Manually cancelled
+
+### Retrying failed ingestions
+
+If ingestion jobs fail:
+
+1. Review the error message to understand the issue
+2. Fix the underlying problem (e.g., corrupted file, permissions)
+3. Click **Retry Failed Jobs** to reprocess failed files
+
+### Stopping ingestion
+
+To stop file watching:
+
+1. Click **Stop Ingestion** on the dataset detail page
+2. Any in-progress jobs will be cancelled
+3. New files will not be automatically processed
+
+<Note>
+File watching continues even after a server restart. Syft Space remembers your configuration and resumes monitoring.
+</Note>
+
+## Checking dataset health
+
+Before using a dataset in an endpoint, verify it's healthy:
+
+<Steps>
+
+### View provisioner status
+
+For local file datasets, check the provisioner status on the dataset detail page:
+
+- **Running** - ChromaDB container is active and healthy
+- **Stopped** - Container is not running
+- **Starting** - Container is being provisioned
+- **Error** - Provisioning failed (see error message)
+
+### Test dataset connection
+
+Click **Test Connection** to verify:
+- The dataset service is responding
+- Authentication is working (for remote datasets)
+- The collection exists and is accessible
+
+</Steps>
+
+<Tip>
+For local file datasets, the provisioner automatically restarts if the container stops. You can manually restart it from the dataset detail page if needed.
+</Tip>
+
+## Dataset configuration examples
+
+### Research papers dataset
+
+```json
+{
+  "name": "research-papers",
+  "dtype": "local_file",
+  "configuration": {
+    "collectionName": "ResearchPapers",
+    "httpPort": 8100,
+    "filePaths": [
+      {
+        "path": "/home/user/research/papers",
+        "description": "Academic papers on machine learning"
+      },
+      {
+        "path": "/home/user/research/preprints",
+        "description": "ArXiv preprints"
+      }
+    ],
+    "ingestFileTypeOptions": [".pdf", ".txt", ".md"]
+  },
+  "summary": "Collection of ML research papers and preprints",
+  "tags": "research,ml,papers"
+}
+```
+
+### Production knowledge base
+
+```json
+{
+  "name": "production-kb",
+  "dtype": "remote_weaviate",
+  "configuration": {
+    "http_url": "https://kb-cluster.weaviate.network",
+    "grpc_url": "https://kb-cluster.weaviate.network",
+    "api_key": "your-api-key-here",
+    "collection_name": "KnowledgeArticles",
+    "content_property": "body",
+    "metadata_properties": ["title", "author", "category", "published_at"],
+    "default_similarity_threshold": 0.7
+  },
+  "summary": "Production knowledge base articles",
+  "tags": "production,kb,articles"
+}
+```
+
+## Updating datasets
+
+You can update certain dataset properties after creation:
+
+<Steps>
+
+### Navigate to dataset
+
+Click on the dataset you want to update.
+
+### Edit properties
+
+Click **Edit** to modify:
+- **Name** - Change the dataset identifier
+- **Summary** - Update the description
+- **Tags** - Modify the tag list
+
+<Warning>
+You cannot change the dataset type or core configuration (like collection name or connection settings) after creation. To change these, you must create a new dataset.
+</Warning>
+
+### Save changes
+
+Click **Save** to apply your changes.
+
+</Steps>
+
+## Deleting datasets
+
+Deleting a dataset permanently removes all associated data:
+
+<Steps>
+
+### Check connected endpoints
+
+Before deleting, verify no endpoints are using this dataset. The dataset detail page shows all connected endpoints.
+
+### Delete dataset
+
+Click **Delete Dataset** and confirm the action.
+
+### What gets deleted
+
+For local file datasets:
+- The ChromaDB collection and all vectors
+- All ingestion jobs and history
+- Associated page images and extracted content
+- The Docker container (if not shared)
+
+For remote Weaviate datasets:
+- Only the dataset configuration in Syft Space
+- Your actual Weaviate collection is NOT affected
+
+</Steps>
+
+<Warning>
+Deletion is permanent and cannot be undone. Make sure to back up any important data before deleting.
+</Warning>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Connect models" icon="brain" href="/guides/connecting-models">
+    Add AI models to generate responses from your dataset
+  </Card>
+  <Card title="Build endpoints" icon="plug" href="/guides/building-endpoints">
+    Create queryable endpoints that combine datasets and models
+  </Card>
+</CardGroup>

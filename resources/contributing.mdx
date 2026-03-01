@@ -1,0 +1,319 @@
+---
+title: Contributing to Syft Space
+description: Learn how to contribute to the Syft Space project
+---
+
+We welcome contributions from the community! Syft Space is an open-source project built by the OpenMined community to make AI safer through privacy-preserving technology.
+
+## Ways to contribute
+
+<CardGroup cols={2}>
+  <Card title="Report bugs" icon="bug">
+    Found a bug? Report it on our [GitHub Issues](https://github.com/OpenMined/syft-space/issues)
+  </Card>
+  <Card title="Suggest features" icon="lightbulb">
+    Have an idea? Open a feature request on [GitHub Discussions](https://github.com/OpenMined/syft-space/discussions)
+  </Card>
+  <Card title="Improve docs" icon="book">
+    Help improve our documentation by submitting pull requests
+  </Card>
+  <Card title="Write code" icon="code">
+    Contribute code improvements, bug fixes, or new features
+  </Card>
+</CardGroup>
+
+## Getting started
+
+### Prerequisites
+
+<Tabs>
+  <Tab title="Backend">
+    - Python 3.12 or higher
+    - Docker (required for local vector database provisioning)
+    - [uv](https://github.com/astral-sh/uv) package manager (recommended)
+  </Tab>
+  <Tab title="Frontend">
+    - Node.js 20 or higher
+    - [Bun](https://bun.sh) package manager
+  </Tab>
+</Tabs>
+
+### Development setup
+
+<Steps>
+  <Step title="Fork and clone the repository">
+    ```bash
+    git clone https://github.com/your-username/syft-space.git
+    cd syft-space
+    ```
+  </Step>
+  
+  <Step title="Quick start with run script">
+    ```bash
+    ./run.sh
+    ```
+    
+    This script automatically sets up the backend and starts the development server.
+  </Step>
+  
+  <Step title="Manual setup (alternative)">
+    <Tabs>
+      <Tab title="Backend">
+        ```bash
+        # Create virtual environment
+        uv venv -p 3.12
+        
+        # Install dependencies
+        uv pip install -e backend/
+        
+        # Run the server
+        uv run uvicorn backend.main:app --reload --host 0.0.0.0 --port 8080
+        ```
+      </Tab>
+      <Tab title="Frontend">
+        ```bash
+        cd frontend
+        
+        # Install dependencies
+        bun install
+        
+        # Start dev server
+        bun dev
+        ```
+      </Tab>
+    </Tabs>
+  </Step>
+  
+  <Step title="Access the application">
+    - Backend API: http://localhost:8080
+    - API docs: http://localhost:8080/docs
+    - Frontend (dev): http://localhost:5173
+  </Step>
+</Steps>
+
+## Project structure
+
+```
+syft-space/
+├── backend/              # Python FastAPI server
+│   ├── syft_space/       # Main application code
+│   │   ├── components/   # Feature modules
+│   │   │   ├── datasets/ # Dataset management
+│   │   │   ├── models/   # Model integration
+│   │   │   ├── endpoints/# RAG endpoints
+│   │   │   └── policies/ # Access control
+│   │   └── shared/       # Common utilities
+│   └── pyproject.toml    # Python dependencies
+├── frontend/             # Vue 3 web interface
+│   ├── src/
+│   │   ├── components/   # Reusable components
+│   │   ├── pages/        # Route pages
+│   │   ├── api/          # API client
+│   │   └── stores/       # State management
+│   └── package.json      # Node dependencies
+├── docs/                 # Documentation
+├── Dockerfile            # Container build
+└── docker-compose.yml    # Multi-container setup
+```
+
+## Development workflow
+
+### Backend development
+
+The backend follows a domain-driven design pattern where each component has:
+
+- `entities.py` - SQLModel database models
+- `repository.py` - Data access layer (CRUD)
+- `handlers.py` - Business logic
+- `schemas.py` - Pydantic request/response models
+- `routes.py` - FastAPI endpoints
+
+<Tabs>
+  <Tab title="Code quality">
+    ```bash
+    cd backend
+    
+    # Format code
+    ruff format .
+    
+    # Lint code
+    ruff check .
+    
+    # Type checking
+    mypy .
+    ```
+  </Tab>
+  <Tab title="Testing">
+    ```bash
+    cd backend
+    pytest
+    ```
+  </Tab>
+  <Tab title="Database">
+    Migrations run automatically on server startup. See [MIGRATIONS.md](https://github.com/OpenMined/syft-space/blob/main/backend/MIGRATIONS.md) for details.
+  </Tab>
+</Tabs>
+
+### Frontend development
+
+The frontend uses Vue 3 with Composition API, TypeScript, and Tailwind CSS.
+
+<Tabs>
+  <Tab title="Code quality">
+    ```bash
+    cd frontend
+    
+    # Lint with ESLint and Oxlint
+    bun run lint
+    
+    # TypeScript type checking
+    bun run typecheck
+    
+    # Format with Prettier
+    bun run format
+    ```
+  </Tab>
+  <Tab title="Testing">
+    ```bash
+    cd frontend
+    
+    # Unit tests
+    bun run test:unit
+    
+    # E2E tests (dev mode)
+    bun run test:e2e:dev
+    
+    # E2E tests (production build)
+    bun run build
+    bun run test:e2e
+    ```
+  </Tab>
+  <Tab title="UI components">
+    This project uses [shadcn/ui](https://ui.shadcn.com) components. To add new components:
+    
+    ```bash
+    npx shadcn-vue@latest add <component-name>
+    ```
+  </Tab>
+</Tabs>
+
+<Note>
+  Always run lint and typecheck commands after making changes to ensure code quality.
+</Note>
+
+## Submitting contributions
+
+<Steps>
+  <Step title="Create a feature branch">
+    ```bash
+    git checkout -b feature/your-feature-name
+    ```
+  </Step>
+  
+  <Step title="Make your changes">
+    - Write clear, concise commit messages
+    - Follow the existing code style and patterns
+    - Add tests for new functionality
+    - Update documentation as needed
+  </Step>
+  
+  <Step title="Run quality checks">
+    <Tabs>
+      <Tab title="Backend">
+        ```bash
+        cd backend
+        ruff format .
+        ruff check .
+        mypy .
+        pytest
+        ```
+      </Tab>
+      <Tab title="Frontend">
+        ```bash
+        cd frontend
+        bun run lint
+        bun run typecheck
+        bun run format
+        ```
+      </Tab>
+    </Tabs>
+  </Step>
+  
+  <Step title="Commit your changes">
+    ```bash
+    git add .
+    git commit -m "feat: add new feature description"
+    ```
+    
+    Use conventional commit format:
+    - `feat:` - New features
+    - `fix:` - Bug fixes
+    - `docs:` - Documentation changes
+    - `refactor:` - Code refactoring
+    - `test:` - Test additions or changes
+    - `chore:` - Maintenance tasks
+  </Step>
+  
+  <Step title="Push and create a pull request">
+    ```bash
+    git push origin feature/your-feature-name
+    ```
+    
+    Then open a pull request on GitHub with:
+    - Clear description of changes
+    - Reference to related issues
+    - Screenshots for UI changes
+  </Step>
+</Steps>
+
+## Code style guidelines
+
+### Backend (Python)
+
+- Use Black formatting with line length 88
+- Type hints are required for all functions
+- Follow PEP 8 conventions
+- Use Pydantic for data validation
+- Document complex logic with docstrings
+
+### Frontend (TypeScript/Vue)
+
+- Use Vue 3 Composition API with `<script setup>`
+- Prefer TypeScript for type safety
+- Use shadcn/ui components over custom implementations
+- Follow Tailwind CSS utility-first approach
+- Use lucide-vue-next for icons
+
+## Getting help
+
+<CardGroup cols={2}>
+  <Card title="GitHub Discussions" icon="comments">
+    Ask questions and discuss ideas on [GitHub Discussions](https://github.com/OpenMined/syft-space/discussions)
+  </Card>
+  <Card title="GitHub Issues" icon="circle-exclamation">
+    Report bugs and request features on [GitHub Issues](https://github.com/OpenMined/syft-space/issues)
+  </Card>
+  <Card title="OpenMined Slack" icon="slack">
+    Join the OpenMined community on [Slack](https://openmined.slack.com)
+  </Card>
+  <Card title="Documentation" icon="book-open">
+    Read the full [documentation](http://syft.docs.openmined.org)
+  </Card>
+</CardGroup>
+
+## Code of conduct
+
+We are committed to providing a welcoming and inclusive environment. All contributors are expected to:
+
+- Be respectful and considerate
+- Provide constructive feedback
+- Focus on what is best for the community
+- Show empathy towards other contributors
+
+## License
+
+By contributing to Syft Space, you agree that your contributions will be licensed under the Apache License 2.0.
+
+---
+
+Thank you for contributing to Syft Space and helping make AI safer through privacy-preserving technology!

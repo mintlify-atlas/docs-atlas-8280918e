@@ -1,0 +1,206 @@
+---
+title: Update settings
+description: Update Syft Space settings including public URL and proxy configuration
+---
+
+## Update public URL
+
+Updates the public URL for the Syft Space server. The URL is stored in the database and synced to the configured marketplace if available.
+
+### Endpoint
+
+```
+PATCH /api/v1/settings/public-url
+```
+
+### Authentication
+
+Requires authentication via bearer token (admin API key).
+
+### Headers
+
+<ParamField header="X-Tenant-Name" type="string">
+  Tenant identifier. Required when multi-tenancy is enabled.
+</ParamField>
+
+### Request body
+
+<ParamField body="public_url" type="string" required>
+  The new public URL to set. Must be a valid HTTP or HTTPS URL.
+</ParamField>
+
+### Response
+
+<ResponseField name="public_url" type="string | null">
+  The updated public URL for the server.
+</ResponseField>
+
+### Example request
+
+```bash
+curl -X PATCH https://your-server.com/api/v1/settings/public-url \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "public_url": "https://my-server.example.com"
+  }'
+```
+
+### Example response
+
+```json
+{
+  "public_url": "https://my-server.example.com"
+}
+```
+
+### Notes
+
+- The public URL is synced to the default marketplace if one is configured
+- If marketplace sync fails, the endpoint returns an error and the URL is not updated
+- The URL can also be set via the `SYFT_PUBLIC_URL` environment variable on startup
+
+---
+
+## Configure proxy
+
+Configures and connects the ngrok proxy tunnel using the provided authentication token. The tunnel configuration is persisted and will automatically reconnect on app restart.
+
+### Endpoint
+
+```
+POST /api/v1/settings/proxy
+```
+
+### Authentication
+
+Requires authentication via bearer token (admin API key).
+
+### Headers
+
+<ParamField header="X-Tenant-Name" type="string">
+  Tenant identifier. Required when multi-tenancy is enabled.
+</ParamField>
+
+### Request body
+
+<ParamField body="ngrok_token" type="string" required>
+  Ngrok authentication token. Must be at least 1 character long. Get your token from the [ngrok dashboard](https://dashboard.ngrok.com).
+</ParamField>
+
+### Response
+
+<ResponseField name="connected" type="boolean" required>
+  Whether the proxy tunnel is successfully connected.
+</ResponseField>
+
+<ResponseField name="public_url" type="string | null">
+  The public URL of the established tunnel.
+</ResponseField>
+
+<ResponseField name="has_token" type="boolean" required>
+  Whether an ngrok token is configured (always `true` after successful configuration).
+</ResponseField>
+
+### Example request
+
+```bash
+curl -X POST https://your-server.com/api/v1/settings/proxy \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "ngrok_token": "2abc123def456..."
+  }'
+```
+
+### Example response
+
+```json
+{
+  "connected": true,
+  "public_url": "https://abc123.ngrok.app",
+  "has_token": true
+}
+```
+
+### Error responses
+
+<ResponseField name="404">
+  Returned when ngrok proxy service is not configured or no default marketplace is configured.
+</ResponseField>
+
+<ResponseField name="400">
+  Returned when connection to ngrok fails. The error detail contains information about the failure.
+</ResponseField>
+
+### Notes
+
+- The proxy automatically creates a tunnel with the marketplace username as the subdomain
+- The public URL is automatically synced to the default marketplace after successful connection
+- The token is securely stored and used for automatic reconnection on server restart
+- Requires a default marketplace to be configured
+
+---
+
+## Disconnect proxy
+
+Disconnects the ngrok proxy tunnel and clears the stored configuration.
+
+### Endpoint
+
+```
+DELETE /api/v1/settings/proxy
+```
+
+### Authentication
+
+Requires authentication via bearer token (admin API key).
+
+### Headers
+
+<ParamField header="X-Tenant-Name" type="string">
+  Tenant identifier. Required when multi-tenancy is enabled.
+</ParamField>
+
+### Response
+
+<ResponseField name="connected" type="boolean" required>
+  Whether the proxy tunnel is connected (always `false` after successful disconnection).
+</ResponseField>
+
+<ResponseField name="public_url" type="string | null">
+  The public URL of the tunnel (always `null` after disconnection).
+</ResponseField>
+
+<ResponseField name="has_token" type="boolean" required>
+  Whether an ngrok token is configured (always `false` after disconnection).
+</ResponseField>
+
+### Example request
+
+```bash
+curl -X DELETE https://your-server.com/api/v1/settings/proxy \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+### Example response
+
+```json
+{
+  "connected": false,
+  "public_url": null,
+  "has_token": false
+}
+```
+
+### Error responses
+
+<ResponseField name="404">
+  Returned when ngrok proxy service is not configured.
+</ResponseField>
+
+### Notes
+
+- This clears both the active connection and the stored ngrok token
+- The public URL is cleared from the default marketplace if one is configured
+- After disconnection, you'll need to provide the token again to reconnect

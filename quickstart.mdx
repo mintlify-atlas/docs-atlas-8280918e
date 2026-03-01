@@ -1,80 +1,217 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: Quickstart
+description: Get started with Syft Space in 5 minutes
 ---
 
-## Get started in three steps
-
-Get your documentation site running locally and make your first customization.
-
-### Step 1: Set up your local environment
-
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
-
-### Step 2: Deploy your changes
-
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
-
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
-
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
-
-### Step 3: Go live
-
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
-
-## Next steps
-
-Now that you have your docs running, explore these key features:
-
-<CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
-</CardGroup>
+Create your first AI-powered endpoint in just a few steps.
 
 <Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
+  This guide assumes you have already [installed Syft Space](/installation). If not, install it first using Docker, Desktop App, or from source.
 </Note>
+
+## Step 1: Register your account
+
+After installation, open Syft Space in your browser:
+
+```
+http://localhost:8080
+```
+
+<Steps>
+  <Step title="Click Register">
+    Create your account with email and password
+  </Step>
+  <Step title="Configure network">
+    <Tabs>
+      <Tab title="Local deployment">
+        Add your developer token (contact OpenMined to get one)
+      </Tab>
+      <Tab title="Cloud/VM deployment">
+        Add your server's public IP address
+      </Tab>
+    </Tabs>
+  </Step>
+</Steps>
+
+<Info>
+  Developer tokens are only needed for local deployments when publishing endpoints. See [Installation](/installation) for details.
+</Info>
+
+## Step 2: Add your data
+
+Create a dataset to store your documents:
+
+<Steps>
+  <Step title="Navigate to Datasets">
+    Click **Datasets** in the sidebar
+  </Step>
+  <Step title="Click Add Dataset">
+    Fill in the dataset details:
+    - **Name**: my-docs
+    - **Type**: Local file (ChromaDB)
+    - **Summary**: My first dataset
+  </Step>
+  <Step title="Upload files">
+    Upload PDF, TXT, or DOCX files. They'll be automatically:
+    - Extracted and chunked
+    - Embedded with OpenAI
+    - Indexed in ChromaDB
+  </Step>
+  <Step title="Wait for processing">
+    Monitor ingestion progress in the dataset detail view
+  </Step>
+</Steps>
+
+<Tip>
+  Start with a few small documents to test. You can add more later.
+</Tip>
+
+## Step 3: Connect a model
+
+Configure an AI model to answer queries:
+
+<Steps>
+  <Step title="Navigate to Models">
+    Click **Models** in the sidebar
+  </Step>
+  <Step title="Click Add Model">
+    Fill in the model details:
+    - **Name**: gpt-4
+    - **Type**: OpenAI
+    - **API Key**: Your OpenAI API key
+    - **Model**: gpt-4 (or gpt-3.5-turbo for lower cost)
+  </Step>
+  <Step title="Test connection">
+    The health check will verify your API key is valid
+  </Step>
+</Steps>
+
+<Warning>
+  Never commit your API keys to version control. Store them securely in environment variables.
+</Warning>
+
+## Step 4: Create an endpoint
+
+Combine your dataset and model into a queryable endpoint:
+
+<Steps>
+  <Step title="Navigate to Endpoints">
+    Click **Endpoints** in the sidebar
+  </Step>
+  <Step title="Click Add Endpoint">
+    Fill in the endpoint details:
+    - **Name**: My Docs Assistant
+    - **Slug**: my-docs (must be unique)
+    - **Dataset**: my-docs
+    - **Model**: gpt-4
+    - **Response Type**: Both (summary + references)
+  </Step>
+  <Step title="Configure policies (optional)">
+    Add access control or rate limiting policies
+  </Step>
+  <Step title="Save endpoint">
+    Your endpoint is now ready to query!
+  </Step>
+</Steps>
+
+## Step 5: Test your endpoint
+
+Query your endpoint using the built-in interface or API:
+
+<Tabs>
+  <Tab title="Web interface">
+    1. Open your endpoint detail page
+    2. Use the built-in query interface
+    3. Ask a question: "What are the main topics in these documents?"
+    4. View the AI-generated summary and source references
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST http://localhost:8080/api/v1/endpoints/my-docs/query \
+      -H "Content-Type: application/json" \
+      -H "Authorization: Bearer YOUR_TOKEN" \
+      -d '{
+        "messages": [
+          {"role": "user", "content": "What are the main topics?"}
+        ]
+      }'
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    import requests
+
+    response = requests.post(
+        "http://localhost:8080/api/v1/endpoints/my-docs/query",
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": "Bearer YOUR_TOKEN"
+        },
+        json={
+            "messages": [
+                {"role": "user", "content": "What are the main topics?"}
+            ]
+        }
+    )
+
+    result = response.json()
+    print(result["summary"]["message"]["content"])
+    ```
+  </Tab>
+</Tabs>
+
+## Step 6: Publish (optional)
+
+Make your endpoint discoverable on SyftHub:
+
+<Steps>
+  <Step title="Click Publish">
+    In the endpoint detail page, click the **Publish** button
+  </Step>
+  <Step title="Choose visibility">
+    - **Organization**: Only accessible to your team
+    - **Public**: Discoverable on SyftHub marketplace
+  </Step>
+  <Step title="Confirm">
+    Your endpoint is now live at [syfthub.openmined.org](https://syfthub.openmined.org)
+  </Step>
+</Steps>
+
+<Note>
+  Publishing requires either a developer token (local) or public IP (cloud). Configure this in Settings → Network.
+</Note>
+
+## What's next?
+
+<CardGroup cols={2}>
+  <Card title="Core concepts" icon="book" href="/concepts/overview">
+    Understand how datasets, models, endpoints, and policies work
+  </Card>
+  <Card title="Creating datasets" icon="database" href="/guides/creating-datasets">
+    Learn about dataset types and file ingestion
+  </Card>
+  <Card title="Building endpoints" icon="link" href="/guides/building-endpoints">
+    Master endpoint configuration and testing
+  </Card>
+  <Card title="API reference" icon="code" href="/api/introduction">
+    Explore the complete REST API
+  </Card>
+</CardGroup>
+
+## Example use case
+
+**Company knowledge base:**
+
+1. **Dataset**: Upload your internal documentation (wikis, guides, policies)
+2. **Model**: Connect GPT-4 for high-quality answers
+3. **Endpoint**: Create "company-kb" endpoint with summary + references
+4. **Policies**:
+   - Access: Only allow @company.com emails
+   - Rate limit: 100 requests/hour per user
+5. **Publish**: Share within organization
+
+Now employees can ask questions like "What is our vacation policy?" and get accurate answers with source citations.
+
+<Tip>
+  Start simple and iterate. You can always add more datasets, refine policies, and optimize performance later.
+</Tip>

@@ -1,0 +1,287 @@
+---
+title: Support
+description: Get help with Syft Space
+---
+
+Need help with Syft Space? We're here to support you through multiple channels.
+
+## Community support
+
+<CardGroup cols={2}>
+  <Card title="GitHub Discussions" icon="comments" href="https://github.com/OpenMined/syft-space/discussions">
+    Ask questions, share ideas, and connect with the community
+  </Card>
+  <Card title="GitHub Issues" icon="circle-exclamation" href="https://github.com/OpenMined/syft-space/issues">
+    Report bugs, request features, and track ongoing work
+  </Card>
+  <Card title="OpenMined Slack" icon="slack" href="https://openmined.slack.com">
+    Chat with the OpenMined community in real-time
+  </Card>
+  <Card title="Documentation" icon="book-open" href="http://syft.docs.openmined.org">
+    Comprehensive guides and API references
+  </Card>
+</CardGroup>
+
+## Quick links
+
+### Getting started
+
+- [Installation guide](/installation) - Set up Syft Space on your system
+- [Quick start](/quickstart) - Get up and running in minutes
+- [Components overview](/space/components/overview) - Understand the core concepts
+
+### Common issues
+
+<AccordionGroup>
+  <Accordion title="Docker connection issues">
+    If Syft Space cannot connect to Docker:
+    
+    1. Ensure Docker is running: `docker ps`
+    2. Check Docker socket permissions:
+       ```bash
+       # Linux
+       sudo usermod -aG docker $USER
+       newgrp docker
+       ```
+    3. For Docker Desktop on Mac/Windows, ensure it's running and the socket is exposed
+    4. Verify the volume mount in your docker run command includes:
+       ```bash
+       -v /var/run/docker.sock:/var/run/docker.sock
+       ```
+  </Accordion>
+  
+  <Accordion title="Dataset provisioning fails">
+    If local dataset provisioning fails:
+    
+    1. Check available ports (8081, 50051 for ChromaDB)
+    2. Verify Docker has enough resources (4GB RAM minimum, 8GB recommended)
+    3. Check Docker logs:
+       ```bash
+       docker logs syft-chromadb
+       ```
+    4. Restart the provisioner from the Datasets page
+  </Accordion>
+  
+  <Accordion title="API authentication errors">
+    If you're getting 401 Unauthorized errors:
+    
+    1. For admin endpoints, ensure you've set `SYFT_ADMIN_API_KEY`
+    2. For query endpoints, verify your SyftHub token is valid
+    3. Include the token in the Authorization header:
+       ```bash
+       -H "Authorization: Bearer your-token"
+       ```
+    4. In development mode, leave `SYFT_ADMIN_API_KEY` empty to disable auth
+  </Accordion>
+  
+  <Accordion title="File ingestion not working">
+    If files aren't being indexed:
+    
+    1. Check the ingestion path exists and is accessible
+    2. Verify the dataset is in `RUNNING` state
+    3. Check ingestion status in the Datasets page
+    4. Review logs for file processing errors
+    5. Supported formats: PDF, TXT, MD, DOCX, HTML
+  </Accordion>
+  
+  <Accordion title="Model connection fails">
+    If you can't connect to your AI model:
+    
+    1. Verify the API key is correct
+    2. For custom endpoints (Ollama, vLLM), ensure the `base_url` is reachable
+    3. Check model health in the Models page
+    4. Test the endpoint directly:
+       ```bash
+       curl http://localhost:11434/api/generate # Ollama
+       curl http://localhost:8000/v1/models     # vLLM
+       ```
+  </Accordion>
+  
+  <Accordion title="High memory usage">
+    If Syft Space is using too much memory:
+    
+    1. Reduce the number of concurrent ingestion workers
+    2. For large PDFs, the system uses docling which requires significant memory
+    3. Allocate more memory to Docker (8GB+ for heavy workloads)
+    4. Monitor memory in your system's task manager
+  </Accordion>
+</AccordionGroup>
+
+## Report a bug
+
+Found a bug? Help us improve Syft Space by reporting it.
+
+<Steps>
+  <Step title="Check existing issues">
+    Search [GitHub Issues](https://github.com/OpenMined/syft-space/issues) to see if the bug has already been reported.
+  </Step>
+  
+  <Step title="Gather information">
+    Collect details about the bug:
+    - Syft Space version (check Settings → About)
+    - Operating system and version
+    - Docker version: `docker --version`
+    - Python version: `python --version`
+    - Steps to reproduce the issue
+    - Error messages or logs
+  </Step>
+  
+  <Step title="Create an issue">
+    Open a [new issue](https://github.com/OpenMined/syft-space/issues/new) with:
+    - Clear, descriptive title
+    - Detailed description of the problem
+    - Steps to reproduce
+    - Expected vs actual behavior
+    - Screenshots or error logs (if applicable)
+  </Step>
+</Steps>
+
+## Request a feature
+
+Have an idea for improving Syft Space?
+
+<Steps>
+  <Step title="Check existing requests">
+    Search [GitHub Discussions](https://github.com/OpenMined/syft-space/discussions) to see if the feature has been suggested.
+  </Step>
+  
+  <Step title="Start a discussion">
+    Create a new discussion with:
+    - Clear description of the feature
+    - Use case or problem it solves
+    - How it would benefit users
+    - Any implementation ideas
+  </Step>
+  
+  <Step title="Get community feedback">
+    Engage with the community to refine the idea and gather support.
+  </Step>
+</Steps>
+
+## Contributing
+
+Want to help improve Syft Space? We welcome contributions!
+
+<Card title="Contributing guide" icon="code-pull-request" href="/resources/contributing">
+  Learn how to contribute code, documentation, and more
+</Card>
+
+## System requirements
+
+### Minimum requirements
+
+- **RAM**: 4GB minimum, 8GB recommended
+- **Storage**: 2GB for application, additional space for datasets
+- **Docker**: Required for local vector databases
+- **Python**: 3.12 or higher (for development)
+- **Node.js**: 20 or higher (for frontend development)
+
+### Supported platforms
+
+<Tabs>
+  <Tab title="Desktop app">
+    - macOS 11+ (Intel and Apple Silicon)
+    - Ubuntu 20.04+
+    - Debian 11+
+    - Fedora 36+
+    - Windows 10+ (coming soon)
+  </Tab>
+  <Tab title="Docker">
+    - Linux (x86_64, arm64)
+    - macOS with Docker Desktop
+    - Windows with Docker Desktop
+  </Tab>
+  <Tab title="From source">
+    - Any platform with Python 3.12+ and Docker
+  </Tab>
+</Tabs>
+
+## Diagnostic information
+
+When seeking support, it's helpful to provide diagnostic information:
+
+### Check application logs
+
+<Tabs>
+  <Tab title="Desktop app">
+    Logs are written to:
+    - macOS: `~/Library/Logs/syft-space/`
+    - Linux: `~/.local/share/syft-space/logs/`
+  </Tab>
+  <Tab title="Docker">
+    ```bash
+    docker logs syft-space
+    ```
+  </Tab>
+  <Tab title="From source">
+    Logs are written to:
+    - `~/.syft-space/logs/app.log`
+    
+    You can also check console output when running with `--reload`.
+  </Tab>
+</Tabs>
+
+### Check system status
+
+```bash
+# Check if Docker is running
+docker ps
+
+# Check Syft Space containers
+docker ps -a | grep syft
+
+# Check database
+ls -lh ~/.syft-space/app.db
+
+# Test API health
+curl http://localhost:8080/health
+```
+
+### Check provisioner status
+
+Visit http://localhost:8080/api/v1/datasets/provisioners/ to see the status of all dataset provisioners.
+
+## Security issues
+
+<Warning>
+  If you discover a security vulnerability, please DO NOT open a public issue.
+</Warning>
+
+Instead, report security issues privately to the OpenMined security team:
+
+- Email: security@openmined.org
+- Include detailed steps to reproduce
+- Allow time for the team to address the issue before public disclosure
+
+## Community resources
+
+### OpenMined ecosystem
+
+Syft Space is part of the larger OpenMined ecosystem for privacy-preserving AI:
+
+<CardGroup cols={2}>
+  <Card title="PySyft" icon="python" href="https://github.com/OpenMined/PySyft">
+    Privacy-preserving machine learning framework
+  </Card>
+  <Card title="SyftHub" icon="globe" href="https://syfthub.openmined.org">
+    Decentralized marketplace for knowledge endpoints
+  </Card>
+  <Card title="OpenMined" icon="shield" href="https://openmined.org">
+    Learn about the OpenMined mission and projects
+  </Card>
+  <Card title="OpenMined Blog" icon="newspaper" href="https://blog.openmined.org">
+    News, tutorials, and updates from the community
+  </Card>
+</CardGroup>
+
+### Stay updated
+
+- Follow [@openminedorg](https://twitter.com/openminedorg) on Twitter
+- Subscribe to the [OpenMined newsletter](https://openmined.org/newsletter)
+- Watch the [GitHub repository](https://github.com/OpenMined/syft-space) for updates
+
+---
+
+<Note>
+  Can't find what you're looking for? Ask on [GitHub Discussions](https://github.com/OpenMined/syft-space/discussions) or [Slack](https://openmined.slack.com).
+</Note>

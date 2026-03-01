@@ -1,0 +1,339 @@
+---
+title: "Features"
+description: "System tray integration, auto-updates, autostart, and other desktop-specific features"
+---
+
+## System tray integration
+
+The Syft Space desktop app lives in your system tray (menu bar on macOS, notification area on Linux), providing quick access to status and controls without keeping a window open.
+
+### Real-time status monitoring
+
+The tray icon shows three key status indicators:
+
+- **Server status**: Running ✓ or Stopped
+- **Tunnel status**: Connected ✓, Disconnected, or Not Configured  
+- **Published endpoints**: Count of your live endpoints
+
+<Info>
+Status indicators update automatically every 5 seconds by polling your local backend.
+</Info>
+
+### Tray menu actions
+
+**Open Syft Space**  
+Show the main application window. The window can be closed and the app continues running in the background.
+
+**Restart Server**  
+Restart the entire application (backend + frontend). Useful when troubleshooting or applying configuration changes.
+
+**Copy Public URL**  
+Copy your tunnel's public URL to the clipboard. Only enabled when the tunnel is connected.
+
+<Tip>
+Quickly share your Space's public URL by clicking **Copy Public URL** from the tray menu.
+</Tip>
+
+**Check for Updates**  
+Manually trigger an update check. The app also checks automatically every hour.
+
+**About Syft Space**  
+View the current version, license information, and credits.
+
+**Quit**  
+Completely exit the application and stop all background processes.
+
+### Background operation
+
+Closing the main window doesn't quit the app—it keeps running in the background:
+
+- Your endpoints remain accessible
+- The backend server continues running
+- Status monitoring continues
+- Auto-update checks continue
+
+This means you can close the window after setup and let your Space run unattended.
+
+<Warning>
+To completely stop Syft Space, use **Quit** from the tray menu. Closing the window alone won't stop the server.
+</Warning>
+
+## Auto-updates
+
+The desktop app automatically checks for new versions and prompts you to install updates.
+
+### How it works
+
+1. **Automatic checks**: The app checks for updates every hour in the background
+2. **Update notification**: When an update is available, a window appears with:
+   - Version number
+   - Release notes
+   - Install or Skip buttons
+3. **One-click installation**: Click **Install** to download and install the update
+4. **Automatic restart**: The app restarts automatically after installation
+
+### Manual update check
+
+You can manually check for updates anytime:
+
+1. Click the system tray icon
+2. Select **Check for Updates**
+3. If an update is available, you'll see the update dialog
+4. If you're on the latest version, you'll see "No updates available"
+
+### Update states
+
+The update window shows different states:
+
+- **Checking**: Looking for new versions
+- **Available**: An update is ready to install with release notes
+- **Downloading**: Update is downloading (with progress bar)
+- **Failed**: Download or installation failed (with error details)
+- **None**: You're on the latest version
+
+### Skipping updates
+
+If you click **Skip** on an update:
+
+- The app won't show that update notification again automatically
+- You can still install it manually via **Check for Updates**
+- New versions will still show update notifications
+
+<Note>
+Update downloads are verified with public key signatures before installation to ensure authenticity.
+</Note>
+
+## Autostart
+
+Configure Syft Space to launch automatically when you log in to your computer.
+
+### Enable autostart
+
+1. Click the system tray icon
+2. Click **Autostart** to toggle it on
+3. A checkmark (✓) appears next to Autostart when enabled
+
+### Disable autostart
+
+1. Click the system tray icon  
+2. Click **Autostart** to toggle it off
+3. The checkmark disappears
+
+### Platform-specific behavior
+
+<Tabs>
+  <Tab title="macOS">
+    On macOS, autostart uses **Launch Agents**:
+
+    - App launches silently in the background
+    - System tray icon appears immediately
+    - Main window doesn't open automatically
+    - Configured in `~/Library/LaunchAgents/`
+
+    The app uses the `LaunchAgent` launcher type, which is the recommended method for user-level services on macOS.
+  </Tab>
+  <Tab title="Linux">
+    On Linux, autostart uses **XDG autostart**:
+
+    - App launches when your desktop environment loads
+    - System tray icon appears after login
+    - Main window doesn't open automatically
+    - Desktop entry created in `~/.config/autostart/`
+
+    Compatible with GNOME, KDE, XFCE, and other XDG-compliant desktop environments.
+  </Tab>
+</Tabs>
+
+<Tip>
+Enable autostart if you're running a production Space that should always be available. The app runs quietly in the background.
+</Tip>
+
+## Window management
+
+The desktop app provides native window controls with privacy-focused behavior.
+
+### Close vs. Quit
+
+**Closing the window**:
+- Hides the window but keeps the app running
+- Server continues running in the background
+- Endpoints remain accessible
+- Click **Open Syft Space** in the tray to show the window again
+
+**Quitting the app**:
+- Stops all background processes
+- Closes the backend server
+- Endpoints become unavailable
+- Use **Quit** from the tray menu
+
+### macOS-specific window behavior
+
+On macOS, the app follows platform conventions:
+
+- When the window is closed, the app icon is removed from the Dock
+- Clicking the system tray icon shows the window and restores the Dock icon
+- The app uses `Accessory` activation policy when hidden
+- The app uses `Regular` activation policy when the window is visible
+
+<Note>
+This is standard macOS behavior for menu bar apps that don't need to show in the Dock when hidden.
+</Note>
+
+## Logs and debugging
+
+The desktop app maintains separate log files for different components.
+
+### Log locations
+
+All logs are stored in `~/.syft-space/logs/`:
+
+| Log file | Contents |
+|----------|----------|
+| `syft-space-desktop.log` | Main app events, window management, tray updates |
+| `syft-space-backend.log` | FastAPI server logs, API requests, errors |
+| `syft-space-process-wick.log` | Process monitoring and cleanup events |
+
+### View logs
+
+To view recent logs:
+
+```bash
+# Desktop app logs
+tail -f ~/.syft-space/logs/syft-space-desktop.log
+
+# Backend server logs  
+tail -f ~/.syft-space/logs/syft-space-backend.log
+
+# Process monitor logs
+tail -f ~/.syft-space/logs/syft-space-process-wick.log
+```
+
+### Log levels
+
+Logs use standard severity levels:
+
+- `INFO` - Normal operation (startup, status checks, updates)
+- `WARN` - Non-critical issues (retries, skipped operations)
+- `ERROR` - Failures that need attention (API errors, crashes)
+- `DEBUG` - Detailed information (only in debug builds)
+
+<Tip>
+When reporting issues, include relevant excerpts from all three log files.
+</Tip>
+
+## Process management
+
+The desktop app uses a multi-process architecture with automatic cleanup.
+
+### Process hierarchy
+
+```
+syft-space (main)
+├── syft-space-backend (FastAPI server)
+└── process-wick (monitor)
+```
+
+**Main process** (Tauri/Rust):
+- Manages the application window and WebView
+- Handles system tray and menu
+- Spawns and monitors child processes
+- Manages update checks and installation
+
+**Backend process** (Python/PyInstaller):
+- Runs the FastAPI server on localhost
+- Handles API requests, datasets, endpoints
+- Packaged as a single executable with dependencies
+- Logs stdout/stderr to `syft-space-backend.log`
+
+**Process monitor** (process-wick sidecar):
+- Monitors the main process
+- Ensures child processes are terminated when main process exits
+- Prevents orphaned processes
+- Restarts automatically if it crashes
+
+### Automatic cleanup
+
+When you quit the app:
+
+1. Main process receives quit signal
+2. Process monitor detects main process exit
+3. All child processes are terminated gracefully
+4. Resources are cleaned up
+5. System tray icon is removed
+
+<Warning>
+If you force-kill the app (e.g., via Activity Monitor or kill command), child processes may not be cleaned up properly. Always use **Quit** from the tray menu.
+</Warning>
+
+## macOS-specific features
+
+### TCC permissions
+
+On macOS, the app may need permissions to access certain folders. The first time you browse or upload files from a protected location (Documents, Downloads, Desktop), macOS will prompt you to grant access.
+
+#### Reset folder permissions
+
+If you accidentally denied permission or want to reset access:
+
+1. The app provides a command to reset permissions
+2. Valid services:
+   - `SystemPolicyDocumentsFolder`
+   - `SystemPolicyDesktopFolder`  
+   - `SystemPolicyDownloadsFolder`
+3. After resetting, the system will prompt again on next access
+
+<Note>
+You can also manually manage permissions in **System Settings → Privacy & Security → Files and Folders**.
+</Note>
+
+### Code signing and notarization
+
+The macOS app is code-signed and notarized:
+
+- Signed with a Developer ID certificate
+- Notarized by Apple for Gatekeeper approval
+- Uses hardened runtime with entitlements
+- All binaries (including PyInstaller bundle) are signed
+
+This ensures the app can run without security warnings on modern macOS versions.
+
+## Technical details
+
+### Built with Tauri
+
+Syft Space desktop is built with [Tauri](https://tauri.app), a framework for building native apps with web technologies:
+
+- **Frontend**: Vue 3 app rendered in native WebView
+- **Backend**: Rust process managing system integration
+- **Bundle size**: ~200MB (includes Python runtime and dependencies)
+- **Memory usage**: ~150-200MB typical
+
+### Backend packaging
+
+The Python backend is packaged with [PyInstaller](https://pyinstaller.org):
+
+- Single-directory bundle (`--onedir` mode)
+- Includes Python 3.12 runtime
+- All dependencies bundled (FastAPI, SQLModel, etc.)
+- Executable permissions set automatically on first launch
+
+### Update mechanism
+
+Updates use the official [Tauri updater plugin](https://v2.tauri.app/plugin/updater/):
+
+- Fetches latest version from GitHub Releases
+- Downloads `latest.json` manifest
+- Verifies signatures with public key
+- Downloads platform-specific installer
+- Applies update and restarts
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Set up your first Space and create an endpoint.
+  </Card>
+  <Card title="Installation" icon="download" href="/desktop/installation">
+    Download and install the desktop app.
+  </Card>
+</CardGroup>

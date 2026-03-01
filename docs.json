@@ -1,122 +1,169 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "theme": "mint",
-  "name": "Mint Starter Kit",
+  "name": "Syft Space",
+  "theme": "palm",
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#4F46E5",
+    "light": "#818CF8",
+    "dark": "#3730A3"
   },
-  "favicon": "/favicon.svg",
+  "navbar": {
+    "primary": {
+      "type": "github",
+      "href": "https://github.com/openmined/syft-space"
+    }
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/openmined/syft-space"
+    }
+  },
   "navigation": {
     "tabs": [
       {
-        "tab": "Guides",
+        "tab": "Documentation",
         "groups": [
           {
-            "group": "Getting started",
+            "group": "Get Started",
             "pages": [
-              "index",
+              "introduction",
               "quickstart",
-              "development"
+              "installation"
             ]
           },
           {
-            "group": "Customization",
+            "group": "Core Concepts",
             "pages": [
-              "essentials/settings",
-              "essentials/navigation"
+              "concepts/overview",
+              "concepts/datasets",
+              "concepts/models",
+              "concepts/endpoints",
+              "concepts/policies"
             ]
           },
           {
-            "group": "Writing content",
+            "group": "Guides",
             "pages": [
-              "essentials/markdown",
-              "essentials/code",
-              "essentials/images",
-              "essentials/reusable-snippets"
+              "guides/creating-datasets",
+              "guides/connecting-models",
+              "guides/building-endpoints",
+              "guides/setting-policies",
+              "guides/publishing-to-syfthub",
+              "guides/querying-endpoints"
             ]
           },
           {
-            "group": "AI tools",
+            "group": "Desktop App",
             "pages": [
-              "ai-tools/cursor",
-              "ai-tools/claude-code",
-              "ai-tools/windsurf"
+              "desktop/overview",
+              "desktop/installation",
+              "desktop/features"
+            ]
+          },
+          {
+            "group": "Deployment",
+            "pages": [
+              "deployment/docker",
+              "deployment/source",
+              "deployment/production"
+            ]
+          },
+          {
+            "group": "Advanced",
+            "pages": [
+              "advanced/architecture",
+              "advanced/security",
+              "advanced/vector-databases",
+              "advanced/custom-integrations"
             ]
           }
         ]
       },
       {
-        "tab": "API reference",
+        "tab": "API Reference",
         "groups": [
           {
-            "group": "API documentation",
+            "group": "Overview",
             "pages": [
-              "api-reference/introduction"
+              "api/introduction",
+              "api/authentication"
             ]
           },
           {
-            "group": "Endpoint examples",
+            "group": "Endpoints",
             "pages": [
-              "api-reference/endpoint/get",
-              "api-reference/endpoint/create",
-              "api-reference/endpoint/delete",
-              "api-reference/endpoint/webhook"
+              "api/endpoints/create",
+              "api/endpoints/query",
+              "api/endpoints/publish",
+              "api/endpoints/list",
+              "api/endpoints/update",
+              "api/endpoints/delete"
+            ]
+          },
+          {
+            "group": "Datasets",
+            "pages": [
+              "api/datasets/create",
+              "api/datasets/list",
+              "api/datasets/get",
+              "api/datasets/update",
+              "api/datasets/delete",
+              "api/datasets/types"
+            ]
+          },
+          {
+            "group": "Models",
+            "pages": [
+              "api/models/create",
+              "api/models/list",
+              "api/models/get",
+              "api/models/update",
+              "api/models/delete",
+              "api/models/types"
+            ]
+          },
+          {
+            "group": "Policies",
+            "pages": [
+              "api/policies/create",
+              "api/policies/list",
+              "api/policies/get",
+              "api/policies/update",
+              "api/policies/delete",
+              "api/policies/types"
+            ]
+          },
+          {
+            "group": "Settings",
+            "pages": [
+              "api/settings/get",
+              "api/settings/update"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Resources",
+        "groups": [
+          {
+            "group": "Community",
+            "pages": [
+              "resources/contributing",
+              "resources/support",
+              "resources/changelog"
+            ]
+          },
+          {
+            "group": "Use Cases",
+            "pages": [
+              "use-cases/publishers",
+              "use-cases/researchers",
+              "use-cases/organizations",
+              "use-cases/data-monetization"
             ]
           }
         ]
       }
-    ],
-    "global": {
-      "anchors": [
-        {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
-        },
-        {
-          "anchor": "Blog",
-          "href": "https://mintlify.com/blog",
-          "icon": "newspaper"
-        }
-      ]
-    }
-  },
-  "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
-  },
-  "navbar": {
-    "links": [
-      {
-        "label": "Support",
-        "href": "mailto:hi@mintlify.com"
-      }
-    ],
-    "primary": {
-      "type": "button",
-      "label": "Dashboard",
-      "href": "https://dashboard.mintlify.com"
-    }
-  },
-  "contextual": {
-    "options": [
-     "copy",
-     "view",
-     "chatgpt",
-     "claude",
-     "perplexity",
-     "mcp",
-     "cursor",
-     "vscode"
-   ]
-  },
-  "footer": {
-    "socials": {
-      "x": "https://x.com/mintlify",
-      "github": "https://github.com/mintlify",
-      "linkedin": "https://linkedin.com/company/mintlify"
-    }
+    ]
   }
 }

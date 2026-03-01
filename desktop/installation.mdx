@@ -1,0 +1,302 @@
+---
+title: "Installation"
+description: "Install the Syft Space desktop app on macOS or Linux"
+---
+
+## Download the latest release
+
+Download the installer for your operating system from the [GitHub Releases](https://github.com/OpenMined/syft-space/releases) page.
+
+<Info>
+The desktop app is currently in beta. Windows support is planned for a future release.
+</Info>
+
+## Installation by platform
+
+<Tabs>
+  <Tab title="macOS">
+    ### macOS installation (.dmg)
+
+    The desktop app supports both Intel and Apple Silicon Macs running macOS 11 (Big Sur) or later.
+
+    #### Step 1: Download
+
+    Download `Syft-Space_<version>_universal.dmg` from [Releases](https://github.com/OpenMined/syft-space/releases).
+
+    <Tip>
+    The universal build works on both Intel and Apple Silicon Macs.
+    </Tip>
+
+    #### Step 2: Install
+
+    1. Open the downloaded `.dmg` file
+    2. Drag **Syft Space** to your **Applications** folder
+    3. Eject the disk image
+
+    #### Step 3: First launch
+
+    1. Open **Syft Space** from Applications (or Spotlight)
+    2. If you see a security warning, click **Open** to confirm
+    
+    <Note>
+    On first launch, macOS may show a security dialog because the app is downloaded from the internet. Click **Open** to proceed.
+    </Note>
+
+    #### Step 4: Grant permissions (if needed)
+
+    When accessing datasets from specific folders, macOS may request permission:
+
+    - **Documents folder** - Allow access to index documents
+    - **Downloads folder** - Allow access to uploaded files
+    - **Desktop folder** - Allow access to desktop files
+
+    If you accidentally deny permission, you can reset it from the app's tray menu: **Settings → Reset folder permissions**.
+
+    #### Uninstall
+
+    To uninstall:
+
+    1. Quit Syft Space from the tray menu
+    2. Move **Syft Space.app** from Applications to Trash
+    3. Delete `~/.syft-space` to remove all data
+
+  </Tab>
+  <Tab title="Linux (Debian/Ubuntu)">
+    ### Ubuntu/Debian installation (.deb)
+
+    Supports Ubuntu 20.04+ and Debian-based distributions.
+
+    #### Step 1: Download
+
+    Download `syft-space_<version>_amd64.deb` from [Releases](https://github.com/OpenMined/syft-space/releases).
+
+    #### Step 2: Install
+
+    Install the package using `dpkg`:
+
+    ```bash
+    sudo dpkg -i syft-space_<version>_amd64.deb
+    ```
+
+    If you encounter dependency errors, run:
+
+    ```bash
+    sudo apt-get install -f
+    ```
+
+    #### Step 3: Launch
+
+    Launch from your application menu or run:
+
+    ```bash
+    syft-space
+    ```
+
+    #### Uninstall
+
+    ```bash
+    sudo apt remove syft-space
+    rm -rf ~/.syft-space  # Remove data (optional)
+    ```
+
+  </Tab>
+  <Tab title="Linux (Fedora/RHEL)">
+    ### Fedora/RHEL installation (.rpm)
+
+    Supports Fedora 36+ and RHEL-based distributions.
+
+    #### Step 1: Download
+
+    Download `syft-space-<version>.x86_64.rpm` from [Releases](https://github.com/OpenMined/syft-space/releases).
+
+    #### Step 2: Install
+
+    Install the package using `rpm` or `dnf`:
+
+    ```bash
+    # Using dnf (recommended)
+    sudo dnf install syft-space-<version>.x86_64.rpm
+
+    # Or using rpm
+    sudo rpm -i syft-space-<version>.x86_64.rpm
+    ```
+
+    #### Step 3: Launch
+
+    Launch from your application menu or run:
+
+    ```bash
+    syft-space
+    ```
+
+    #### Uninstall
+
+    ```bash
+    sudo dnf remove syft-space
+    rm -rf ~/.syft-space  # Remove data (optional)
+    ```
+
+  </Tab>
+  <Tab title="Linux (AppImage)">
+    ### Universal Linux installation (.AppImage)
+
+    Works on any modern Linux distribution without installation.
+
+    #### Step 1: Download
+
+    Download `Syft-Space_<version>_amd64.AppImage` from [Releases](https://github.com/OpenMined/syft-space/releases).
+
+    #### Step 2: Make executable
+
+    ```bash
+    chmod +x Syft-Space_<version>_amd64.AppImage
+    ```
+
+    #### Step 3: Run
+
+    ```bash
+    ./Syft-Space_<version>_amd64.AppImage
+    ```
+
+    <Tip>
+    You can move the AppImage to any location. Consider placing it in `~/Applications` or `/opt`.
+    </Tip>
+
+    #### Create desktop entry (optional)
+
+    To add Syft Space to your application menu:
+
+    1. Move the AppImage to `~/Applications`:
+       ```bash
+       mkdir -p ~/Applications
+       mv Syft-Space_*.AppImage ~/Applications/syft-space.AppImage
+       ```
+
+    2. Create a desktop entry:
+       ```bash
+       cat > ~/.local/share/applications/syft-space.desktop <<EOF
+       [Desktop Entry]
+       Name=Syft Space
+       Exec=$HOME/Applications/syft-space.AppImage
+       Icon=syft-space
+       Type=Application
+       Categories=Network;Application;
+       Terminal=false
+       EOF
+       ```
+
+    #### Uninstall
+
+    Simply delete the AppImage file and data directory:
+
+    ```bash
+    rm ~/Applications/syft-space.AppImage
+    rm -rf ~/.syft-space  # Remove data (optional)
+    ```
+
+  </Tab>
+</Tabs>
+
+## Verify installation
+
+After installation, verify Syft Space is running:
+
+1. Check for the system tray icon (bell icon in your menu bar or system tray)
+2. Click **Open Syft Space** from the tray menu
+3. The web interface should open at `http://localhost:8080`
+4. You should see the Syft Space dashboard
+
+## First-time setup
+
+Once the app is running:
+
+1. **Create an account**: Click **Register** and set up your credentials
+2. **Configure network settings**:
+   - For local development: Add a developer token from OpenMined
+   - For cloud deployment: Add your public IP address
+3. **Add your first dataset**: Upload documents or connect a vector database
+4. **Create an endpoint**: Combine your dataset with an AI model
+
+See the [Quickstart guide](/quickstart) for detailed first-time setup instructions.
+
+## Troubleshooting
+
+### App won't start
+
+1. Check if the port `8080` is already in use:
+   ```bash
+   # macOS/Linux
+   lsof -i :8080
+   ```
+
+2. Check logs for errors:
+   ```bash
+   cat ~/.syft-space/logs/syft-space-desktop.log
+   cat ~/.syft-space/logs/syft-space-backend.log
+   ```
+
+### macOS: "App is damaged" error
+
+If you see a "damaged" error on macOS:
+
+1. Remove the quarantine attribute:
+   ```bash
+   xattr -cr /Applications/Syft\ Space.app
+   ```
+
+2. Try launching again
+
+### Linux: Missing dependencies
+
+If the AppImage or installed app won't start, install WebKitGTK:
+
+<Tabs>
+  <Tab title="Ubuntu/Debian">
+    ```bash
+    sudo apt install libwebkit2gtk-4.1-0
+    ```
+  </Tab>
+  <Tab title="Fedora">
+    ```bash
+    sudo dnf install webkit2gtk4.1
+    ```
+  </Tab>
+  <Tab title="Arch">
+    ```bash
+    sudo pacman -S webkit2gtk-4.1
+    ```
+  </Tab>
+</Tabs>
+
+### Can't access certain folders
+
+**macOS only**: If you can't browse or upload files from specific folders:
+
+1. Open the system tray menu
+2. Right-click the Syft Space icon
+3. The app will prompt for folder access permissions when needed
+
+Alternatively, grant Full Disk Access in **System Settings → Privacy & Security → Full Disk Access**.
+
+## Get help
+
+If you encounter issues:
+
+1. Check the [GitHub Issues](https://github.com/OpenMined/syft-space/issues) for known problems
+2. Review logs in `~/.syft-space/logs/`
+3. Join the [OpenMined Slack](https://slack.openmined.org) for community support
+4. Open a new issue with:
+   - Your OS and version
+   - App version (from **About Syft Space** in tray menu)
+   - Relevant log excerpts
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Features" icon="sparkles" href="/desktop/features">
+    Learn about autostart, auto-updates, and system tray controls.
+  </Card>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Set up your first Space and create an endpoint.
+  </Card>
+</CardGroup>

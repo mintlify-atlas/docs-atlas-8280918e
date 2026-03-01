@@ -1,0 +1,128 @@
+---
+title: Introduction to Syft Space
+description: A privacy-preserving platform that lets you create AI-powered endpoints from your data while maintaining full control
+---
+
+# Make your knowledge queryable without giving it up
+
+Syft Space lets you create AI-powered endpoints that others can query while your data stays under your control.
+
+<img src="/images/homepage.png" alt="Syft Space Dashboard" />
+
+## What is Syft Space?
+
+A Syft Space is a decentralized node operated by anyone with knowledge to share: a publisher, a research lab, a journalist, an institution, or just an individual.
+
+You add your documents, connect an AI model, and create endpoints that others can query. You control who gets access, what they can ask, and whether they pay.
+
+<CardGroup cols={2}>
+  <Card title="Privacy-first" icon="lock">
+    Your data never leaves your control
+  </Card>
+  <Card title="Selective sharing" icon="filter">
+    Share insights, not raw data
+  </Card>
+  <Card title="Monetization" icon="dollar-sign">
+    Set your own pricing and access rules
+  </Card>
+  <Card title="AI-powered" icon="sparkles">
+    Make any document collection searchable with AI
+  </Card>
+</CardGroup>
+
+Think of it like creating an API for your knowledge - others get answers without seeing your source material.
+
+## Architecture
+
+Syft Space is a full-stack application that creates a bridge between your private data and AI models, allowing controlled access through secure endpoints.
+
+<img src="/images/fullsetup.png" alt="Syft Space Architecture" />
+
+**Core components:**
+
+- **Frontend**: Vue 3 web interface for management and configuration
+- **Backend**: FastAPI server handling requests, policies, and data processing
+- **Vector databases**: Local or remote databases (Weaviate, Qdrant, ChromaDB) for document indexing
+- **AI models**: Integration with OpenAI, Anthropic, Ollama, vLLM, and other providers
+- **SyftHub integration**: Optional publishing to the decentralized knowledge network
+
+The system automatically provisions Docker containers for local vector databases and provides a unified API for querying across different data sources and AI models.
+
+## How it works
+
+Build your knowledge hub with four core components:
+
+<Steps>
+  <Step title="Datasets">
+    Upload documents or connect vector databases. Files are automatically indexed for AI search.
+  </Step>
+  <Step title="Models">
+    Connect OpenAI, Anthropic, Ollama, vLLM, or any OpenAI-compatible provider.
+  </Step>
+  <Step title="Endpoints">
+    Combine datasets and models into queryable RAG endpoints anyone can use.
+  </Step>
+  <Step title="Policies">
+    Control access, set rate limits, and configure pricing for your endpoints.
+  </Step>
+</Steps>
+
+```
+[Your Data] + [AI Model] → [Queryable Endpoint] + [Your Rules] = [Controlled Knowledge Sharing]
+```
+
+## Get started
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Get up and running in 5 minutes
+  </Card>
+  <Card title="Installation" icon="download" href="/installation">
+    Choose your installation method
+  </Card>
+  <Card title="Core concepts" icon="book" href="/concepts/overview">
+    Understand how Syft Space works
+  </Card>
+  <Card title="API reference" icon="code" href="/api/introduction">
+    Explore the REST API
+  </Card>
+</CardGroup>
+
+## Use cases
+
+<Accordion title="Publishers & creators">
+  Make your content AI-queryable for your audience while maintaining attribution and control.
+</Accordion>
+
+<Accordion title="Researchers">
+  Turn your papers and notes into a searchable knowledge assistant that others can query.
+</Accordion>
+
+<Accordion title="Organizations">
+  Build AI-powered customer support from your documentation without exposing internal details.
+</Accordion>
+
+<Accordion title="Teams">
+  Create searchable knowledge hubs from scattered wikis, docs, and guides.
+</Accordion>
+
+<Accordion title="Data monetization">
+  Share valuable insights from your data without exposing the underlying information.
+</Accordion>
+
+<Note>
+  Learn more about specific use cases in the [Use Cases](/use-cases/publishers) section.
+</Note>
+
+## Part of the Syft network
+
+A Space connects to **[SyftHub](https://syfthub.openmined.org)** — a decentralized registry where knowledge providers meet knowledge seekers.
+
+**How it works:**
+
+- **Discovery**: Others find your published endpoints through SyftHub
+- **Querying**: Users can search and query across multiple Spaces
+- **Attribution**: Every contribution is tracked and credited automatically
+- **Open architecture**: Built on open protocols — no single point of control
+
+The network grows stronger as more Spaces join, but each Space maintains full autonomy over its data and policies.

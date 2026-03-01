@@ -1,0 +1,629 @@
+---
+title: Production deployment
+description: Deploy Syft Space in production with security, networking, and scalability best practices
+---
+
+Deploy Syft Space in production environments with proper security, networking, and configuration.
+
+## Production checklist
+
+Before deploying to production:
+
+- [ ] Configure authentication with `SYFT_ADMIN_API_KEY`
+- [ ] Set up HTTPS with a reverse proxy
+- [ ] Configure firewall rules
+- [ ] Set up persistent volume backups
+- [ ] Configure logging and monitoring
+- [ ] Set resource limits
+- [ ] Configure developer token or public IP
+- [ ] Test endpoint publishing to SyftHub
+- [ ] Set up rate limiting policies
+- [ ] Review security best practices
+
+## Deployment options
+
+### Cloud VM deployment
+
+Deploy on a cloud VM with a public IP:
+
+<CodeGroup>
+
+```bash AWS EC2
+# Launch Ubuntu 22.04 instance
+# Security group: Allow 8080, 22, 443
+
+sudo apt update && sudo apt install -y docker.io docker-compose
+sudo systemctl enable docker
+sudo usermod -aG docker ubuntu
+
+# Deploy Syft Space
+docker run -d \
+    --name syft-space \
+    --restart unless-stopped \
+    -p 8080:8080 \
+    -v /var/run/docker.sock:/var/run/docker.sock \
+    -v syft-space-data:/data \
+    -e SYFT_ADMIN_API_KEY="your-secure-key-here" \
+    -e SYFT_PUBLIC_URL="https://your-domain.com" \
+    ghcr.io/openmined/syft-space:latest
+```
+
+```bash Google Cloud
+# Create Compute Engine instance
+# Firewall: Allow tcp:8080, tcp:22, tcp:443
+
+sudo apt update && sudo apt install -y docker.io docker-compose
+sudo systemctl enable docker
+sudo usermod -aG docker $(whoami)
+
+# Deploy Syft Space
+docker run -d \
+    --name syft-space \
+    --restart unless-stopped \
+    -p 8080:8080 \
+    -v /var/run/docker.sock:/var/run/docker.sock \
+    -v syft-space-data:/data \
+    -e SYFT_ADMIN_API_KEY="your-secure-key-here" \
+    -e SYFT_PUBLIC_URL="https://your-domain.com" \
+    ghcr.io/openmined/syft-space:latest
+```
+
+```bash Azure
+# Create Ubuntu 22.04 VM
+# Network security group: Allow 8080, 22, 443
+
+sudo apt update && sudo apt install -y docker.io docker-compose
+sudo systemctl enable docker
+sudo usermod -aG docker azureuser
+
+# Deploy Syft Space
+docker run -d \
+    --name syft-space \
+    --restart unless-stopped \
+    -p 8080:8080 \
+    -v /var/run/docker.sock:/var/run/docker.sock \
+    -v syft-space-data:/data \
+    -e SYFT_ADMIN_API_KEY="your-secure-key-here" \
+    -e SYFT_PUBLIC_URL="https://your-domain.com" \
+    ghcr.io/openmined/syft-space:latest
+```
+
+```bash DigitalOcean
+# Create Ubuntu 22.04 Droplet
+# Firewall: Allow 8080, 22, 443
+
+sudo apt update && sudo apt install -y docker.io docker-compose
+sudo systemctl enable docker
+sudo usermod -aG docker root
+
+# Deploy Syft Space
+docker run -d \
+    --name syft-space \
+    --restart unless-stopped \
+    -p 8080:8080 \
+    -v /var/run/docker.sock:/var/run/docker.sock \
+    -v syft-space-data:/data \
+    -e SYFT_ADMIN_API_KEY="your-secure-key-here" \
+    -e SYFT_PUBLIC_URL="https://your-domain.com" \
+    ghcr.io/openmined/syft-space:latest
+```
+
+</CodeGroup>
+
+### Docker Compose production setup
+
+Create a production `docker-compose.yml`:
+
+```yaml
+services:
+  syft-space-server:
+    image: ghcr.io/openmined/syft-space:latest
+    container_name: syft-space-server
+    restart: unless-stopped
+    stop_grace_period: 15s
+
+    ports:
+      - "8080:8080"
+
+    volumes:
+      - syft-space-data:/data
+      - /var/run/docker.sock:/var/run/docker.sock
+
+    environment:
+      - DOCKER_HOST=unix:///var/run/docker.sock
+      - SYFT_PORT=8080
+      - SYFT_SQLITE_DB_PATH=/data/app.db
+      - SYFT_DEBUG=false
+      - SYFT_ADMIN_API_KEY=${SYFT_ADMIN_API_KEY}
+      - SYFT_PUBLIC_URL=${SYFT_PUBLIC_URL}
+      - SYFT_DEFAULT_ACCOUNTING_URL=https://syftaccounting.centralus.cloudapp.azure.com/
+      - SYFT_DEFAULT_MARKETPLACE_URL=https://syfthub.openmined.org
+
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/api/v1/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 4G
+        reservations:
+          cpus: "1.0"
+          memory: 1G
+
+  # Optional: Reverse proxy with automatic HTTPS
+  nginx:
+    image: nginx:alpine
+    container_name: syft-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - syft-space-server
+
+volumes:
+  syft-space-data:
+    driver: local
+
+networks:
+  default:
+    name: syft-space-network
+```
+
+## Developer tokens
+
+Developer tokens enable local deployments to publish endpoints to SyftHub.
+
+### When you need a token
+
+| Deployment Type | Token Required | Reason |
+|----------------|----------------|--------|
+| Local machine (no public IP) | ✅ Yes | SyftHub needs a way to route requests |
+| Cloud VM with public IP | ❌ No | Uses public IP directly |
+| Local development only | ❌ No | For testing without publishing |
+
+### Getting a developer token
+
+Developer tokens are currently in beta. Contact OpenMined to request access:
+
+- Email: [team@openmined.org](mailto:team@openmined.org)
+- Discord: [OpenMined Community](https://slack.openmined.org)
+- GitHub: Open an issue at [openmined/syft-space](https://github.com/OpenMined/syft-space/issues)
+
+### Configuring your token
+
+<CodeGroup>
+
+```bash During registration
+# When registering your account, add the token in the "Developer Token" field
+```
+
+```bash In settings
+# Navigate to Settings → Network
+# Enter your developer token
+# Click "Save"
+```
+
+```bash Environment variable
+# Not directly configurable via environment variable
+# Must be set through the web interface
+```
+
+</CodeGroup>
+
+## Public IP configuration
+
+For cloud deployments, configure your public IP:
+
+### Auto-detection
+
+Syft Space can auto-detect your public IP:
+
+```bash
+# Leave SYFT_PUBLIC_URL empty for auto-detection
+-e SYFT_PUBLIC_URL=""
+```
+
+### Manual configuration
+
+Explicitly set your public URL:
+
+```bash
+-e SYFT_PUBLIC_URL="https://your-domain.com"
+```
+
+or
+
+```bash
+-e SYFT_PUBLIC_URL="http://203.0.113.42:8080"
+```
+
+### Domain setup
+
+Point your domain to your server:
+
+1. Get your server's public IP:
+   ```bash
+   curl -4 ifconfig.me
+   ```
+
+2. Create an A record:
+   ```
+   Type: A
+   Name: @ (or subdomain)
+   Value: <your-server-ip>
+   TTL: 3600
+   ```
+
+3. Configure `SYFT_PUBLIC_URL`:
+   ```bash
+   -e SYFT_PUBLIC_URL="https://syft.yourdomain.com"
+   ```
+
+## Networking
+
+### Reverse proxy with Nginx
+
+Create `nginx.conf`:
+
+```nginx
+events {
+    worker_connections 1024;
+}
+
+http {
+    upstream syft-space {
+        server syft-space-server:8080;
+    }
+
+    # Redirect HTTP to HTTPS
+    server {
+        listen 80;
+        server_name your-domain.com;
+        return 301 https://$server_name$request_uri;
+    }
+
+    # HTTPS server
+    server {
+        listen 443 ssl http2;
+        server_name your-domain.com;
+
+        # SSL configuration
+        ssl_certificate /etc/nginx/ssl/cert.pem;
+        ssl_certificate_key /etc/nginx/ssl/key.pem;
+        ssl_protocols TLSv1.2 TLSv1.3;
+        ssl_ciphers HIGH:!aNULL:!MD5;
+
+        # Security headers
+        add_header Strict-Transport-Security "max-age=31536000" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header X-Content-Type-Options "nosniff" always;
+
+        # Proxy to Syft Space
+        location / {
+            proxy_pass http://syft-space;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+
+            # WebSocket support
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "upgrade";
+
+            # Timeouts
+            proxy_connect_timeout 60s;
+            proxy_send_timeout 60s;
+            proxy_read_timeout 60s;
+        }
+
+        # Health check endpoint
+        location /api/v1/health {
+            proxy_pass http://syft-space;
+            access_log off;
+        }
+    }
+}
+```
+
+### SSL/TLS certificates
+
+<CodeGroup>
+
+```bash Let's Encrypt (Certbot)
+sudo apt install certbot python3-certbot-nginx
+sudo certbot --nginx -d your-domain.com
+```
+
+```bash Self-signed (development only)
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+  -keyout ./ssl/key.pem \
+  -out ./ssl/cert.pem \
+  -subj "/CN=your-domain.com"
+```
+
+</CodeGroup>
+
+### Firewall configuration
+
+<CodeGroup>
+
+```bash UFW (Ubuntu)
+sudo ufw allow 22/tcp    # SSH
+sudo ufw allow 80/tcp    # HTTP
+sudo ufw allow 443/tcp   # HTTPS
+sudo ufw allow 8080/tcp  # Syft Space (if not using reverse proxy)
+sudo ufw enable
+```
+
+```bash Firewalld (RHEL/CentOS)
+sudo firewall-cmd --permanent --add-service=ssh
+sudo firewall-cmd --permanent --add-service=http
+sudo firewall-cmd --permanent --add-service=https
+sudo firewall-cmd --permanent --add-port=8080/tcp
+sudo firewall-cmd --reload
+```
+
+```bash iptables
+sudo iptables -A INPUT -p tcp --dport 22 -j ACCEPT
+sudo iptables -A INPUT -p tcp --dport 80 -j ACCEPT
+sudo iptables -A INPUT -p tcp --dport 443 -j ACCEPT
+sudo iptables -A INPUT -p tcp --dport 8080 -j ACCEPT
+sudo iptables-save | sudo tee /etc/iptables/rules.v4
+```
+
+</CodeGroup>
+
+## Security
+
+### Authentication
+
+Always set a strong admin API key:
+
+```bash
+# Generate a secure random key
+openssl rand -hex 32
+
+# Set in environment
+-e SYFT_ADMIN_API_KEY="your-generated-key-here"
+```
+
+<Warning>
+Never commit API keys to version control. Use environment variables or secrets management.
+</Warning>
+
+### Docker socket security
+
+The Docker socket provides root-level access to the host. Mitigate risks:
+
+1. **Use dedicated Docker network**:
+   ```yaml
+   networks:
+     syft-space-network:
+       driver: bridge
+       internal: false
+   ```
+
+2. **Limit Docker socket access** (if possible):
+   ```bash
+   # Create a Docker socket proxy with limited permissions
+   # See: https://github.com/Tecnativa/docker-socket-proxy
+   ```
+
+3. **Monitor container creation**:
+   ```bash
+   docker events --filter 'type=container' --filter 'event=create'
+   ```
+
+### Environment variable security
+
+Protect sensitive environment variables:
+
+```bash
+# Create .env file with restricted permissions
+cat > .env << EOF
+SYFT_ADMIN_API_KEY=your-secret-key
+EOF
+
+chmod 600 .env
+
+# Load with Docker Compose
+docker compose --env-file .env up -d
+```
+
+### Rate limiting
+
+Configure rate limiting for endpoints through policies in the web interface:
+
+1. Navigate to **Policies** → **Create Policy**
+2. Set rate limits (requests per minute/hour/day)
+3. Apply to endpoints
+
+### Regular updates
+
+Keep Syft Space up to date:
+
+```bash
+# Pull latest image
+docker pull ghcr.io/openmined/syft-space:latest
+
+# Restart with new image
+docker compose pull
+docker compose up -d
+```
+
+## Monitoring and logging
+
+### Container logs
+
+<CodeGroup>
+
+```bash View logs
+docker logs syft-space-server
+```
+
+```bash Follow logs
+docker logs -f syft-space-server
+```
+
+```bash Last 100 lines
+docker logs --tail 100 syft-space-server
+```
+
+```bash Logs since timestamp
+docker logs --since 2024-01-01T00:00:00 syft-space-server
+```
+
+</CodeGroup>
+
+### Application logs
+
+Logs are stored in the data volume:
+
+```bash
+# Access log files
+docker exec syft-space-server ls -la /data/logs/
+
+# View application log
+docker exec syft-space-server tail -f /data/logs/syft-space-server.log
+```
+
+### Health monitoring
+
+```bash
+# Check health status
+curl http://localhost:8080/api/v1/health
+
+# Response:
+# {"status": "healthy", "version": "1.0.0"}
+```
+
+### Resource monitoring
+
+```bash
+# Container stats
+docker stats syft-space-server
+
+# Detailed inspect
+docker inspect syft-space-server | jq '.[0].State'
+```
+
+## Backup and recovery
+
+### Backup database
+
+```bash
+# Create backup
+docker exec syft-space-server \
+  sqlite3 /data/app.db ".backup '/data/backup-$(date +%Y%m%d).db'"
+
+# Copy backup to host
+docker cp syft-space-server:/data/backup-20240101.db ./
+```
+
+### Backup volumes
+
+```bash
+# Backup entire data volume
+docker run --rm \
+  -v syft-space-data:/data \
+  -v $(pwd):/backup \
+  alpine tar czf /backup/syft-space-backup.tar.gz /data
+```
+
+### Restore from backup
+
+```bash
+# Stop container
+docker stop syft-space-server
+
+# Restore database
+docker cp ./backup-20240101.db syft-space-server:/data/app.db
+
+# Start container
+docker start syft-space-server
+```
+
+## Scaling considerations
+
+### Resource requirements
+
+| Component | Minimum | Recommended | Heavy Load |
+|-----------|---------|-------------|------------|
+| CPU | 0.5 cores | 2 cores | 4 cores |
+| RAM | 512 MB | 2 GB | 4 GB |
+| Storage | 5 GB | 20 GB | 100 GB |
+| Network | 1 Mbps | 10 Mbps | 100 Mbps |
+
+### Vector database scaling
+
+For large datasets, use external vector databases:
+
+- **Weaviate Cloud**: Managed, scalable vector database
+- **Qdrant Cloud**: High-performance vector search
+- **Self-hosted cluster**: Deploy vector DB on separate servers
+
+Configure in the web interface: **Datasets** → **Connect External Database**
+
+## Troubleshooting
+
+### Health check failures
+
+```bash
+# Check if application is responding
+curl -f http://localhost:8080/api/v1/health || echo "Health check failed"
+
+# Check logs
+docker logs --tail 50 syft-space-server
+```
+
+### Publishing endpoints fails
+
+Verify network configuration:
+
+```bash
+# Test connectivity to SyftHub
+curl -I https://syfthub.openmined.org
+
+# Check developer token or public URL is set
+docker exec syft-space-server env | grep SYFT_PUBLIC_URL
+```
+
+### High memory usage
+
+Adjust resource limits:
+
+```yaml
+deploy:
+  resources:
+    limits:
+      memory: 4G  # Increase limit
+```
+
+### Database locked errors
+
+SQLite is single-writer. Reduce concurrent writes:
+
+```bash
+# Check if multiple processes are accessing the database
+docker exec syft-space-server lsof /data/app.db
+```
+
+## Next steps
+
+- Configure [datasets](/space/components/datasets) for your data sources
+- Set up [models](/space/components/models) for AI providers
+- Create [endpoints](/space/components/endpoints) for queries
+- Apply [policies](/space/components/policies) for access control

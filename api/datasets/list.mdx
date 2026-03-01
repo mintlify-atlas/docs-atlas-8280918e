@@ -1,0 +1,148 @@
+---
+title: List datasets
+description: Retrieve all datasets for the current tenant
+---
+
+Retrieve a list of all datasets configured for the authenticated tenant, including provisioner status and connected endpoints.
+
+## Request
+
+<ParamField path="GET" type="string">
+  `/datasets/`
+</ParamField>
+
+### Authentication
+
+Requires authentication via tenant credentials.
+
+## Response
+
+Returns an array of dataset items:
+
+<ResponseField name="id" type="string">
+  Unique identifier (UUID) for the dataset
+</ResponseField>
+
+<ResponseField name="name" type="string">
+  Dataset name
+</ResponseField>
+
+<ResponseField name="dtype" type="string">
+  Dataset type name (e.g., `local_file`, `remote_weaviate`)
+</ResponseField>
+
+<ResponseField name="summary" type="string">
+  Brief description of the dataset
+</ResponseField>
+
+<ResponseField name="tags" type="string">
+  Comma-separated tags
+</ResponseField>
+
+<ResponseField name="configuration" type="object">
+  Full dataset configuration including type-specific settings
+</ResponseField>
+
+<ResponseField name="created_at" type="string">
+  ISO 8601 timestamp of creation
+</ResponseField>
+
+<ResponseField name="connected_endpoints" type="array">
+  List of endpoints connected to this dataset
+
+  <Expandable title="items">
+    <ResponseField name="id" type="string">
+      Endpoint unique identifier
+    </ResponseField>
+
+    <ResponseField name="name" type="string">
+      Endpoint name
+    </ResponseField>
+
+    <ResponseField name="slug" type="string">
+      Endpoint URL slug
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="provisioner_status" type="object" nullable>
+  Provisioner status information (for local dataset types)
+
+  <Expandable title="properties">
+    <ResponseField name="status" type="string">
+      Current provisioner status: `stopped`, `starting`, `running`, `stopping`, or `error`
+    </ResponseField>
+
+    <ResponseField name="error" type="string" nullable>
+      Error message if status is `error`
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<RequestExample>
+```bash cURL
+curl https://your-domain.com/datasets/ \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+</RequestExample>
+
+<ResponseExample>
+```json 200 OK
+[
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "name": "legal-docs",
+    "dtype": "local_file",
+    "summary": "Legal documents for RAG analysis",
+    "tags": "legal,documents,analysis",
+    "configuration": {
+      "collectionName": "LegalDocuments",
+      "httpPort": 8100,
+      "ingestionPaths": [
+        {
+          "path": "/home/user/documents/legal",
+          "description": "Legal documents directory"
+        }
+      ],
+      "fileTypes": [".pdf", ".txt", ".docx"]
+    },
+    "created_at": "2024-03-15T10:30:00Z",
+    "connected_endpoints": [
+      {
+        "id": "650e8400-e29b-41d4-a716-446655440001",
+        "name": "Legal Search API",
+        "slug": "legal-search"
+      }
+    ],
+    "provisioner_status": {
+      "status": "running",
+      "error": null
+    }
+  },
+  {
+    "id": "660e8400-e29b-41d4-a716-446655440002",
+    "name": "remote-knowledge-base",
+    "dtype": "remote_weaviate",
+    "summary": "Remote knowledge base for semantic search",
+    "tags": "knowledge,remote,search",
+    "configuration": {
+      "http_url": "https://weaviate.example.com",
+      "grpc_url": "grpc://weaviate.example.com:50051",
+      "api_key": "***",
+      "collection_name": "KnowledgeBase",
+      "content_property": "body",
+      "metadata_properties": ["title", "author", "date"]
+    },
+    "created_at": "2024-03-14T09:15:00Z",
+    "connected_endpoints": [],
+    "provisioner_status": null
+  }
+]
+```
+
+```json 401 Unauthorized
+{
+  "detail": "Not authenticated"
+}
+```
+</ResponseExample>

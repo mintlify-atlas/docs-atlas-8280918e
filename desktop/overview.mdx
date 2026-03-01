@@ -1,0 +1,124 @@
+---
+title: "Desktop app overview"
+description: "Native desktop application for macOS and Linux with system tray integration and auto-updates"
+---
+
+## What is the Syft Space desktop app?
+
+The Syft Space desktop app is a native application built with Tauri that provides a seamless way to run your Syft Space node locally. It bundles the complete Syft Space stack—frontend, backend, and dependencies—into a single installable package.
+
+<Info>
+The desktop app is the recommended option for users who want a one-click setup without managing Docker containers or Python environments.
+</Info>
+
+## Key features
+
+<CardGroup cols={2}>
+  <Card title="System tray integration" icon="bell">
+    Monitor your Space status, tunnel connection, and published endpoints from your system tray.
+  </Card>
+  <Card title="Auto-updates" icon="arrow-up">
+    Automatic update checks with one-click installation when new versions are available.
+  </Card>
+  <Card title="Autostart" icon="play">
+    Configure Syft Space to start automatically when you log in.
+  </Card>
+  <Card title="Background operation" icon="layer-group">
+    Runs quietly in the background—close the window and the app continues running.
+  </Card>
+</CardGroup>
+
+## How it works
+
+The desktop app uses a multi-process architecture:
+
+1. **Main process** (Rust/Tauri) - Manages the application window, system tray, and lifecycle
+2. **Backend process** (Python) - Runs the FastAPI server bundled with PyInstaller
+3. **Process monitor** - Ensures child processes are properly cleaned up on exit
+
+When you launch the app:
+- The backend server starts automatically on `localhost:8080` (or a random available port)
+- The frontend opens in a native window with WebView2 (Windows), WKWebView (macOS), or WebKitGTK (Linux)
+- A system tray icon appears showing real-time status
+- The app stays running in the background when you close the window
+
+## System tray menu
+
+Right-click (or click) the system tray icon to access:
+
+- **Open Syft Space** - Show the main window
+- **Status indicators**:
+  - Server: Running ✓ / Stopped
+  - Tunnel: Connected ✓ / Disconnected / Not Configured
+  - Endpoints: X published
+- **Restart Server** - Restart the application
+- **Copy Public URL** - Copy your tunnel URL to clipboard (when connected)
+- **Autostart** - Toggle launch at login
+- **Check for Updates** - Manually check for new versions
+- **About Syft Space** - View version and license information
+- **Quit** - Exit the application completely
+
+<Tip>
+The tray status updates automatically every 5 seconds by polling your backend.
+</Tip>
+
+## Platform support
+
+| Platform | Support | Installation format |
+|----------|---------|---------------------|
+| macOS (Intel) | ✅ Full | `.dmg` |
+| macOS (Apple Silicon) | ✅ Full | `.dmg` |
+| Linux (Debian/Ubuntu) | ✅ Full | `.deb` |
+| Linux (Fedora/RHEL) | ✅ Full | `.rpm` |
+| Linux (Universal) | ✅ Full | `.AppImage` |
+| Windows | 🚧 Planned | `.msi` / `.exe` |
+
+## Minimum requirements
+
+- **RAM**: 4GB minimum, 8GB recommended
+- **Disk space**: 500MB for application + space for datasets
+- **OS versions**:
+  - macOS 11 (Big Sur) or later
+  - Ubuntu 20.04 or later (Linux .deb)
+  - Fedora 36 or later (Linux .rpm)
+  - Any modern Linux distribution (AppImage)
+
+## Logs and data location
+
+The desktop app stores logs and configuration in:
+
+```
+~/.syft-space/
+├── logs/
+│   ├── syft-space-desktop.log    # Main app logs
+│   ├── syft-space-backend.log    # Backend server logs
+│   └── syft-space-process-wick.log  # Process monitor logs
+└── app.db                         # SQLite database
+```
+
+<Warning>
+Do not delete the `~/.syft-space` directory while the app is running. This will cause data loss.
+</Warning>
+
+## Comparison with other installation methods
+
+| Feature | Desktop App | Docker | From Source |
+|---------|-------------|--------|-------------|
+| One-click install | ✅ | ⚠️ Requires Docker | ❌ |
+| Auto-updates | ✅ | ❌ | ❌ |
+| System tray | ✅ | ❌ | ❌ |
+| Background operation | ✅ | ✅ | ❌ |
+| Production ready | ✅ | ✅ | ❌ |
+| Custom deployment | ❌ | ✅ | ✅ |
+| Development setup | ❌ | ⚠️ Good enough | ✅ |
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Install the desktop app" icon="download" href="/desktop/installation">
+    Download and install for your operating system.
+  </Card>
+  <Card title="Explore features" icon="sparkles" href="/desktop/features">
+    Learn about autostart, updates, and system tray controls.
+  </Card>
+</CardGroup>

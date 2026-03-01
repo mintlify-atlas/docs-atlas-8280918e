@@ -1,0 +1,270 @@
+---
+title: 'Update endpoint'
+api: 'PATCH /api/v1/endpoints/{slug}'
+---
+
+Update an endpoint's metadata. This operation allows partial updates to the name, summary, and description fields.
+
+<Warning>
+  This endpoint only updates metadata fields. To change the linked dataset, model, or policies, you need to use the respective management endpoints.
+</Warning>
+
+## Authentication
+
+Requires tenant authentication via SyftBox token.
+
+## Path parameters
+
+<ParamField path="slug" type="string" required>
+  The unique slug of the endpoint to update.
+</ParamField>
+
+## Request body
+
+<Info>
+  At least one field must be provided in the request body.
+</Info>
+
+<ParamField body="name" type="string">
+  New name for the endpoint.
+</ParamField>
+
+<ParamField body="summary" type="string">
+  Updated plain-text summary.
+</ParamField>
+
+<ParamField body="description" type="string">
+  Updated markdown-formatted description.
+</ParamField>
+
+## Response
+
+Returns the complete updated endpoint details.
+
+<ResponseField name="id" type="string" required>
+  Unique identifier for the endpoint.
+</ResponseField>
+
+<ResponseField name="name" type="string" required>
+  Updated name of the endpoint.
+</ResponseField>
+
+<ResponseField name="slug" type="string" required>
+  URL-friendly slug (unchanged).
+</ResponseField>
+
+<ResponseField name="description" type="string" required>
+  Updated markdown description.
+</ResponseField>
+
+<ResponseField name="summary" type="string" required>
+  Updated brief summary.
+</ResponseField>
+
+<ResponseField name="response_type" type="string" required>
+  Type of response (raw/summary/both).
+</ResponseField>
+
+<ResponseField name="published" type="boolean" required>
+  Whether the endpoint is published.
+</ResponseField>
+
+<ResponseField name="tags" type="string" required>
+  Comma-separated tags.
+</ResponseField>
+
+<ResponseField name="created_at" type="string" required>
+  ISO 8601 timestamp of creation.
+</ResponseField>
+
+<ResponseField name="updated_at" type="string" required>
+  ISO 8601 timestamp of last update.
+</ResponseField>
+
+<ResponseField name="model" type="object">
+  Attached model information.
+  
+  <Expandable title="model properties">
+    <ResponseField name="id" type="string" required>
+      Unique identifier for the model.
+    </ResponseField>
+    
+    <ResponseField name="name" type="string" required>
+      Name of the model.
+    </ResponseField>
+    
+    <ResponseField name="dtype" type="string" required>
+      Model type name.
+    </ResponseField>
+    
+    <ResponseField name="configuration" type="object" required>
+      Model configuration.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="dataset" type="object">
+  Attached dataset information.
+  
+  <Expandable title="dataset properties">
+    <ResponseField name="id" type="string" required>
+      Unique identifier for the dataset.
+    </ResponseField>
+    
+    <ResponseField name="name" type="string" required>
+      Name of the dataset.
+    </ResponseField>
+    
+    <ResponseField name="summary" type="string" required>
+      Dataset summary.
+    </ResponseField>
+    
+    <ResponseField name="dtype" type="string" required>
+      Dataset type name.
+    </ResponseField>
+    
+    <ResponseField name="configuration" type="object" required>
+      Dataset configuration.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="policies" type="array" required>
+  Array of attached policies.
+  
+  <Expandable title="policy properties">
+    <ResponseField name="id" type="string" required>
+      Unique identifier for the policy.
+    </ResponseField>
+    
+    <ResponseField name="name" type="string" required>
+      Name of the policy.
+    </ResponseField>
+    
+    <ResponseField name="policy_type" type="string" required>
+      Type of policy (e.g., "rate_limit", "access_control").
+    </ResponseField>
+    
+    <ResponseField name="configuration" type="object" required>
+      Policy configuration settings.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<RequestExample>
+
+```bash cURL
+curl --request PATCH \
+  --url http://localhost:8080/api/v1/endpoints/legal-qa \
+  --header 'Authorization: Bearer YOUR_TOKEN' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "name": "Updated Legal Q&A Endpoint",
+    "summary": "Updated summary text",
+    "description": "# Updated Description\nMarkdown content here"
+  }'
+```
+
+```python Python
+import requests
+
+url = "http://localhost:8080/api/v1/endpoints/legal-qa"
+headers = {
+    "Authorization": "Bearer YOUR_TOKEN",
+    "Content-Type": "application/json"
+}
+payload = {
+    "name": "Updated Legal Q&A Endpoint",
+    "summary": "Updated summary text",
+    "description": "# Updated Description\nMarkdown content here"
+}
+
+response = requests.patch(url, json=payload, headers=headers)
+print(response.json())
+```
+
+```javascript JavaScript
+const response = await fetch(
+  'http://localhost:8080/api/v1/endpoints/legal-qa',
+  {
+    method: 'PATCH',
+    headers: {
+      'Authorization': 'Bearer YOUR_TOKEN',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      name: 'Updated Legal Q&A Endpoint',
+      summary: 'Updated summary text',
+      description: '# Updated Description\nMarkdown content here'
+    })
+  }
+);
+
+const data = await response.json();
+console.log(data);
+```
+
+</RequestExample>
+
+<ResponseExample>
+
+```json 200
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "name": "Updated Legal Q&A Endpoint",
+  "slug": "legal-qa",
+  "description": "# Updated Description\nMarkdown content here",
+  "summary": "Updated summary text",
+  "response_type": "both",
+  "published": true,
+  "tags": "legal,qa,documents",
+  "created_at": "2024-03-01T12:00:00Z",
+  "updated_at": "2024-03-01T14:30:00Z",
+  "model": {
+    "id": "223e4567-e89b-12d3-a456-426614174000",
+    "name": "GPT-4 Legal",
+    "dtype": "openai",
+    "configuration": {
+      "model_name": "gpt-4"
+    }
+  },
+  "dataset": {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "name": "Legal Documents DB",
+    "summary": "Vector database of legal documents",
+    "dtype": "weaviate",
+    "configuration": {
+      "host": "localhost",
+      "port": 8080
+    }
+  },
+  "policies": [
+    {
+      "id": "333e4567-e89b-12d3-a456-426614174003",
+      "name": "Rate Limit Policy",
+      "policy_type": "rate_limit",
+      "configuration": {
+        "rate": "100/hour"
+      }
+    }
+  ]
+}
+```
+
+```json 400 Bad Request
+{
+  "detail": "At least one field (name, summary, or description) must be provided"
+}
+```
+
+```json 404 Not Found
+{
+  "detail": "Endpoint with slug 'legal-qa' not found"
+}
+```
+
+</ResponseExample>
+
+<Tip>
+  You can update just one field at a time. For example, to only update the summary, send a request with just the `summary` field.
+</Tip>
